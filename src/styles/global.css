@@ -483,6 +483,24 @@
     color: var(--dp-color-line);
   }
 
+  /* Obsidian 的待办清单：保留勾选框，不再叠加短横线 */
+  .recipe-body li.task-list-item {
+    padding-left: 0;
+  }
+
+  .recipe-body li.task-list-item::before {
+    content: none;
+  }
+
+  .recipe-body li.task-list-item input[type="checkbox"] {
+    width: 0.78em;
+    height: 0.78em;
+    margin-right: 0.5em;
+    vertical-align: 0.02em;
+    accent-color: var(--dp-color-ink);
+    opacity: 0.55;
+  }
+
   .recipe-body a {
     color: var(--dp-color-annotation);
     text-decoration: underline dotted currentColor;
@@ -523,6 +541,191 @@
     transform: rotate(0.4deg);
   }
 
+  /* ---------- 详情页：左（图 + 步骤卡片） / 右（食材） ---------- */
+  .detail-spread {
+    display: grid;
+    gap: 2.75rem;
+    align-items: start;
+  }
+
+  @media (min-width: 1050px) {
+    .detail-spread {
+      grid-template-columns: minmax(0, 1fr) 340px;
+      column-gap: 3rem;
+    }
+  }
+
+  .detail-photo {
+    margin: 0 0 2rem;
+    padding: 9px;
+    background-color: var(--dp-color-scrap);
+    border: var(--dp-border-fine-stroke) solid color-mix(in srgb, var(--dp-color-line) 80%, transparent);
+    box-shadow: 3px 3px 0 rgba(56, 53, 47, 0.1);
+    transform: rotate(-0.4deg);
+  }
+
+  .detail-photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 280px;
+    object-fit: cover;
+  }
+
+  .detail-process-title {
+    margin: 0 0 1.4rem;
+  }
+
+  .detail-side {
+    grid-column: -2;
+    grid-row: 1;
+    padding-left: 2.5rem;
+    border-left: var(--dp-border-fine-stroke) dashed color-mix(in srgb, var(--dp-color-line) 70%, transparent);
+  }
+
+  @media (max-width: 1049px) {
+    .detail-side {
+      padding-left: 0;
+      border-left: 0;
+    }
+  }
+
+  .detail-side h2 {
+    margin-top: 2rem;
+    padding-bottom: 0.4rem;
+    border-bottom: var(--dp-border-fine-stroke) solid #e5e5e5;
+    background-image: none;
+    font-size: 1.28rem;
+    letter-spacing: 0.04em;
+  }
+
+  .detail-side h2:first-child {
+    margin-top: 0;
+  }
+
+  .detail-side h3 {
+    margin-top: 1.5rem;
+    font-size: 1.02rem;
+    letter-spacing: 0.03em;
+  }
+
+  .detail-side table {
+    font-size: 0.94rem;
+    line-height: 1.65;
+  }
+
+  .detail-schedule {
+    margin-top: 2rem;
+  }
+
+  .detail-tips {
+    grid-column: 1 / -1;
+    margin-top: 1rem;
+    padding-top: 2rem;
+    border-top: var(--dp-border-fine-stroke) dashed color-mix(in srgb, var(--dp-color-line) 70%, transparent);
+  }
+
+  .detail-tips h2 {
+    margin-top: 0;
+  }
+
+  /* ---------- 步骤卡片 ---------- */
+  .steps-flow {
+    column-count: 2;
+    column-gap: 1.7rem;
+    counter-reset: stepblock;
+  }
+
+  @media (max-width: 679px) {
+    .steps-flow {
+      column-count: 1;
+    }
+  }
+
+  .steps-flow .step-block {
+    position: relative;
+    break-inside: avoid;
+    margin-bottom: 1.7rem;
+    padding: 1.85rem 1.25rem 1.3rem;
+    background-color: var(--dp-color-scrap);
+    background-image: url("../assets/deco/tape.svg");
+    background-repeat: no-repeat;
+    background-position: 50% 5px;
+    background-size: 68px 22px;
+    border: var(--dp-border-fine-stroke) solid color-mix(in srgb, var(--dp-color-line) 78%, transparent);
+    box-shadow: 3px 3px 0 rgba(56, 53, 47, 0.09);
+    counter-increment: stepblock;
+    transform: rotate(-0.45deg);
+  }
+
+  .steps-flow .step-block:nth-child(even) {
+    transform: rotate(0.5deg);
+  }
+
+  .steps-flow .step-block h3 {
+    display: flex;
+    gap: 0.55rem;
+    align-items: center;
+    margin: 0 0 0.8rem;
+    padding: 0;
+    background-image: none;
+    font-size: 1.6rem;
+    line-height: 1.28;
+  }
+
+  .steps-flow .step-block h3::before {
+    content: counter(stepblock);
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    border: var(--dp-border-fine-stroke) solid color-mix(in srgb, var(--dp-color-accent) 55%, transparent);
+    border-radius: 58% 42% 55% 45% / 45% 55% 48% 52%;
+    font-family: var(--dp-typography-display-face);
+    font-size: 0.82rem;
+    color: var(--dp-color-accent);
+  }
+
+  .steps-flow .step-time {
+    margin-left: auto;
+    font-family: var(--dp-typography-reading-face);
+    font-size: 0.8rem;
+    letter-spacing: 0.04em;
+    color: var(--dp-color-annotation);
+    white-space: nowrap;
+  }
+
+  .steps-flow .step-block strong {
+    background-image: none;
+    color: var(--dp-color-ink);
+    font-weight: 700;
+    font-synthesis: weight;
+  }
+
+  .steps-flow .step-block > ol {
+    margin-top: 0.2rem;
+    counter-reset: none;
+  }
+
+  .steps-flow .step-block > ol > li {
+    margin-top: 0.45rem;
+    padding-left: 1.25rem;
+    font-size: 0.95rem;
+    line-height: 1.8;
+  }
+
+  .steps-flow .step-block > ol > li::before {
+    content: "–";
+    top: 0.62em;
+    width: auto;
+    height: auto;
+    border: 0;
+    background: none;
+    color: var(--dp-color-line);
+    font-family: var(--dp-typography-reading-face);
+    font-size: 1em;
+  }
   /* ---------- 布局辅助 ---------- */
   .paper-grid {
     background-color: var(--dp-color-ground);
