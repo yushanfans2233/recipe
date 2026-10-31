@@ -1,0 +1,42 @@
+name: Deploy to GitHub Pages
+
+on:
+  # 目前只保留手动触发，避免 GitHub Pages 还没开通时每次推送都产生一次失败的运行。
+  # 等 Pages 正式开通后，把下面两行 push 触发器取消注释，就能在每次推送 main 时自动部署。
+  # push:
+  #   branches: [main]
+  workflow_dispatch:
+
+# 允许工作流读取仓库并发布 Pages
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 同一时间只跑一个部署，避免并发发布
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install, build and upload site
+        uses: withastro/action@v6
+        with:
+          node-version: 24
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5

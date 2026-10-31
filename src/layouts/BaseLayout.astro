@@ -1,0 +1,70 @@
+---
+import '../styles/global.css';
+import { url } from '../utils/url';
+
+interface Props {
+  /** 页面标题，会拼成「标题 · Recipe」。留空则使用站点标题。 */
+  title?: string;
+  /** 页面描述，用于 meta description / og:description。 */
+  description?: string;
+}
+
+const { title, description = '一个用 Astro 构建的静态食谱网站。' } = Astro.props;
+
+const siteUrl = Astro.site ?? new URL(Astro.url.origin);
+const canonical = new URL(Astro.url.pathname, siteUrl).href;
+const pageTitle = title ? `${title} · Recipe` : 'Recipe · 食谱';
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{pageTitle}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" type="image/svg+xml" href={url('/favicon.svg')} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Recipe" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+  </head>
+  <body class="flex min-h-screen flex-col bg-stone-50 font-sans text-stone-800 antialiased">
+    <header class="border-b border-stone-200/80">
+      <div class="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-6">
+        <a href={url('/')} class="text-lg font-semibold tracking-tight text-stone-900">
+          Recipe
+        </a>
+        <nav class="flex items-center gap-6 text-sm text-stone-500">
+          <a href={url('/')} class="transition-colors hover:text-stone-900">首页</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-1">
+      <slot />
+    </main>
+
+    <footer class="border-t border-stone-200/80">
+      <div
+        class="mx-auto flex w-full max-w-5xl flex-col gap-2 px-6 py-8 text-sm text-stone-500 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <p>© {new Date().getFullYear()} Recipe</p>
+        <p>
+          Built with{' '}
+          <a
+            href="https://astro.build"
+            class="font-medium text-stone-700 transition-colors hover:text-orange-600"
+            rel="noopener"
+          >
+            Astro
+          </a>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,38 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const stack = [
+  { name: 'Astro', detail: '静态站点框架' },
+  { name: 'TypeScript', detail: 'strict 类型检查' },
+  { name: 'Tailwind CSS', detail: '样式与设计系统' },
+];
+---
+
+<BaseLayout title="首页" description="一个用 Astro 构建的静态食谱网站，正在搭建中。">
+  <section class="mx-auto w-full max-w-5xl px-6 pt-24 pb-20 sm:pt-32">
+    <p class="text-xs font-medium tracking-[0.2em] text-orange-600 uppercase">Recipe</p>
+    <h1
+      class="mt-5 max-w-2xl text-4xl leading-tight font-bold tracking-tight text-stone-900 sm:text-5xl"
+    >
+      好好做饭，<br class="hidden sm:block" />好好吃饭。
+    </h1>
+    <p class="mt-6 max-w-xl text-lg leading-relaxed text-stone-600">
+      一个用 Astro 构建的静态食谱网站，正在搭建中。接下来会逐步把内容、页面和视觉设计补上。
+    </p>
+
+    <ul class="mt-12 grid max-w-2xl gap-3 sm:grid-cols-3">
+      {
+        stack.map((item) => (
+          <li class="rounded-xl border border-stone-200 bg-white px-4 py-4">
+            <p class="font-medium text-stone-900">{item.name}</p>
+            <p class="mt-1 text-sm text-stone-500">{item.detail}</p>
+          </li>
+        ))
+      }
+    </ul>
+
+    <p class="mt-12 text-sm text-stone-400">
+      本地开发：<code class="rounded bg-stone-100 px-1.5 py-0.5 text-stone-600">npm run dev</code>
+    </p>
+  </section>
+</BaseLayout>
