@@ -1,10 +1,10 @@
 name: Deploy to GitHub Pages
 
 on:
-  # 目前只保留手动触发，避免 GitHub Pages 还没开通时每次推送都产生一次失败的运行。
-  # 等 Pages 正式开通后，把下面两行 push 触发器取消注释，就能在每次推送 main 时自动部署。
-  # push:
-  #   branches: [main]
+  # 推送到 main 就自动部署到 https://yushanfans2233.github.io/recipe/
+  push:
+    branches: [main]
+  # 也可以在仓库 Actions 页面手动触发
   workflow_dispatch:
 
 # 允许工作流读取仓库并发布 Pages
