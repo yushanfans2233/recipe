@@ -726,6 +726,231 @@
     font-family: var(--dp-typography-reading-face);
     font-size: 1em;
   }
+  /* ---------- 表单：添加菜谱 ---------- */
+  .form-shell {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+
+  .form-kicker {
+    font-family: var(--dp-typography-display-face);
+    font-size: 1.05rem;
+    letter-spacing: 0.04em;
+    color: var(--dp-color-accent);
+  }
+
+  .form-title {
+    margin-top: 0.3rem;
+    font-family: var(--dp-typography-display-face);
+    font-size: clamp(2rem, 4vw, 2.9rem);
+    line-height: 1.15;
+  }
+
+  .form-hint {
+    margin-top: 0.5rem;
+    font-size: 0.95rem;
+    line-height: 1.8;
+    color: var(--dp-color-annotation);
+  }
+
+  .form-section {
+    position: relative;
+    margin-top: 1.5rem;
+    padding: 2rem 1.5rem 1.6rem;
+    background-color: var(--dp-color-scrap);
+    background-image: url("../assets/deco/tape.svg");
+    background-repeat: no-repeat;
+    background-position: 26px 5px;
+    background-size: 62px 20px;
+    border: var(--dp-border-fine-stroke) solid color-mix(in srgb, var(--dp-color-line) 75%, transparent);
+    box-shadow: 3px 3px 0 rgba(56, 53, 47, 0.08);
+  }
+
+  .form-section-title {
+    display: flex;
+    gap: 0.6rem;
+    align-items: baseline;
+    margin-bottom: 1.1rem;
+    padding-bottom: 0.45rem;
+    border-bottom: var(--dp-border-fine-stroke) dashed color-mix(in srgb, var(--dp-color-line) 70%, transparent);
+    font-family: var(--dp-typography-display-face);
+    font-size: 1.25rem;
+    letter-spacing: 0.03em;
+  }
+
+  .form-section-title .form-step-no {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    border: var(--dp-border-fine-stroke) solid color-mix(in srgb, var(--dp-color-accent) 55%, transparent);
+    border-radius: 58% 42% 55% 45% / 45% 55% 48% 52%;
+    font-size: 0.8rem;
+    color: var(--dp-color-accent);
+  }
+
+  .form-grid {
+    display: grid;
+    gap: 1.1rem 1.5rem;
+  }
+
+  .form-grid.two {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .form-grid.three {
+    grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1.2fr);
+  }
+
+  .form-field {
+    display: block;
+    min-width: 0;
+  }
+
+  .form-label {
+    display: block;
+    margin-bottom: 0.3rem;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    color: var(--dp-color-annotation);
+  }
+
+  .form-input,
+  .form-select,
+  .form-textarea {
+    width: 100%;
+    padding: 0.35rem 0.1rem 0.4rem;
+    background-color: transparent;
+    border: 0;
+    border-bottom: var(--dp-border-fine-stroke) dashed color-mix(in srgb, var(--dp-color-line) 85%, transparent);
+    border-radius: 0;
+    color: var(--dp-color-ink);
+    font-family: var(--dp-typography-reading-face);
+    font-size: 1.15rem;
+    line-height: 1.5;
+  }
+
+  .form-textarea {
+    min-height: 4.2rem;
+    resize: vertical;
+    border-bottom-style: solid;
+    background-image: repeating-linear-gradient(
+      180deg,
+      transparent 0 1.55em,
+      color-mix(in srgb, var(--dp-color-line) 35%, transparent) 1.55em 1.6em
+    );
+  }
+
+  .form-select {
+    appearance: none;
+    cursor: pointer;
+  }
+
+  .form-input::placeholder,
+  .form-textarea::placeholder {
+    color: color-mix(in srgb, var(--dp-color-ink) 32%, transparent);
+  }
+
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    outline: none;
+    border-bottom-color: var(--dp-color-ink);
+    background-color: color-mix(in srgb, var(--dp-color-highlight) 26%, transparent);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr) auto;
+    gap: 0.8rem;
+    align-items: end;
+    margin-top: 0.7rem;
+  }
+
+  .form-group-label {
+    margin: 1.2rem 0 0.2rem;
+    font-size: 0.88rem;
+    letter-spacing: 0.06em;
+    color: var(--dp-color-ink-muted);
+  }
+
+  .form-remove {
+    display: grid;
+    place-items: center;
+    width: 1.85rem;
+    height: 1.85rem;
+    margin-bottom: 0.15rem;
+    border: var(--dp-border-fine-stroke) dashed color-mix(in srgb, var(--dp-color-line) 90%, transparent);
+    border-radius: 50%;
+    background: none;
+    color: var(--dp-color-line);
+    font-family: var(--dp-typography-reading-face);
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+  }
+
+  .form-remove:hover {
+    border-color: var(--dp-color-accent);
+    color: var(--dp-color-accent);
+  }
+
+  .form-add {
+    margin-top: 0.9rem;
+    padding: 0.1rem 0.75rem 0.2rem;
+    border: var(--dp-border-fine-stroke) dashed color-mix(in srgb, var(--dp-color-line) 95%, transparent);
+    border-radius: var(--dp-radius-control);
+    background: none;
+    color: var(--dp-color-annotation);
+    font-family: var(--dp-typography-reading-face);
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .form-add:hover {
+    border-color: var(--dp-color-annotation);
+  }
+
+  .form-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-top: 2rem;
+  }
+
+  .btn-primary {
+    background-color: var(--dp-color-ink);
+    border-color: var(--dp-color-ink);
+    color: var(--dp-color-ground);
+    box-shadow: 2px 2px 0 rgba(158, 58, 46, 0.35);
+  }
+
+  .btn-primary:hover {
+    background-color: color-mix(in srgb, var(--dp-color-ink) 88%, black);
+  }
+
+  .form-photo {
+    display: grid;
+    place-items: center;
+    gap: 0.3rem;
+    padding: 1.6rem 1rem;
+    border: var(--dp-border-fine-stroke) dashed color-mix(in srgb, var(--dp-color-line) 95%, transparent);
+    border-radius: var(--dp-radius-control);
+    background-color: color-mix(in srgb, var(--dp-color-highlight) 12%, transparent);
+    color: var(--dp-color-annotation);
+    font-size: 0.9rem;
+    text-align: center;
+    cursor: pointer;
+  }
+
+  .form-photo strong {
+    font-family: var(--dp-typography-display-face);
+    font-size: 1rem;
+    font-weight: 400;
+  }
+
   /* ---------- 布局辅助 ---------- */
   .paper-grid {
     background-color: var(--dp-color-ground);

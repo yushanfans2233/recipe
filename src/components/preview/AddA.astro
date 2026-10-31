@@ -1,0 +1,27 @@
+---
+import AddFields from './AddFields.astro';
+---
+
+<div class="form-shell">
+  <header class="add-head">
+    <p class="form-kicker">新建菜谱</p>
+    <h1 class="form-title">添加菜谱</h1>
+    <p class="form-hint">
+      从上往下填，最后生成一份 Markdown 和压缩好的封面图，丢进菜谱库就行。
+    </p>
+  </header>
+
+  <AddFields />
+
+  <div class="form-actions">
+    <button type="button" class="sketch-btn btn-primary">生成 Markdown</button>
+    <button type="button" class="sketch-btn">存为草稿</button>
+    <button type="button" class="sketch-btn">清空</button>
+  </div>
+</div>
+
+<style>
+  .add-head {
+    margin-bottom: 0.4rem;
+  }
+</style>
