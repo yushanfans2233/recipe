@@ -1,0 +1,374 @@
+---
+import { Image } from 'astro:assets';
+import type { DemoRecipe } from '../../preview/demo';
+
+interface Props {
+  recipe: DemoRecipe;
+}
+
+const { recipe } = Astro.props;
+const totalTime = recipe.steps
+  .map((step) => step.time)
+  .filter(Boolean)
+  .join(' + ');
+---
+
+<article class="sheet">
+  <header class="head">
+    <div class="title-wrap">
+      <h1 class="title">{recipe.title}</h1>
+      <span class="ring" aria-hidden="true"></span>
+    </div>
+    <p class="byline">
+      {recipe.category} · {recipe.steps.length} 个步骤 · 约 {totalTime}
+    </p>
+  </header>
+
+  <div class="cols">
+    <aside class="side">
+      {
+        recipe.photo && (
+          <figure class="photo">
+            <Image
+              src={recipe.photo}
+              alt={recipe.title}
+              widths={[420, 840]}
+              sizes="(min-width: 1050px) 30vw, 100vw"
+            />
+          </figure>
+        )
+      }
+
+      <h2 class="side-title">食材</h2>
+      <table class="mini">
+        <tbody>
+          {
+            recipe.ingredients.map((row) => (
+              <tr>
+                <td>{row.name}</td>
+                <td>{row.amount}</td>
+              </tr>
+            ))
+          }
+        </tbody>
+      </table>
+
+      <h2 class="side-title">调味</h2>
+      {
+        recipe.seasoning.map((group) => (
+          <div class="group">
+            {group.title && <p class="group-title">{group.title}</p>}
+            <table class="mini">
+              <tbody>
+                {group.rows.map((row) => (
+                  <tr>
+                    <td>{row.name}</td>
+                    <td>{row.amount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        ))
+      }
+
+      <div class="time-box">
+        <div class="time-head"><span>STEP</span><span>TIME</span></div>
+        {
+          recipe.steps.map((step, index) => (
+            <div class="time-row">
+              <span class="circle-no">{index + 1}</span>
+              <span>{step.time}</span>
+            </div>
+          ))
+        }
+      </div>
+
+      <h2 class="side-title tips-title">Tips</h2>
+      <ol class="tips">
+        {recipe.tips.map((tip) => <li>{tip}</li>)}
+      </ol>
+    </aside>
+
+    <div class="main">
+      {
+        recipe.steps.map((step, index) => (
+          <section class="step">
+            <h2 class="step-head">
+              <span class="circle-no">{index + 1}</span>
+              <span class="step-label">Step {index + 1}</span>
+              <span class="step-name">{step.label}</span>
+              <span class="step-time">{step.time}</span>
+            </h2>
+            <ul class="step-items">
+              {step.items.map((item) => (
+                <li>{item}</li>
+              ))}
+            </ul>
+          </section>
+        ))
+      }
+    </div>
+  </div>
+</article>
+
+<style>
+  .sheet {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 5rem;
+  }
+
+  .head {
+    margin-bottom: 2.6rem;
+  }
+
+  .title-wrap {
+    position: relative;
+    display: inline-block;
+    padding: 0.1em 0.34em;
+  }
+
+  .title {
+    font-family: var(--dp-typography-display-face);
+    font-size: clamp(2.1rem, 5vw, 3.1rem);
+    line-height: 1.15;
+    color: var(--dp-color-ink);
+  }
+
+  .ring {
+    position: absolute;
+    inset: -14px -20px;
+    border: 3.2px solid var(--pp-purple);
+    border-radius: 47% 53% 52% 48% / 54% 46% 54% 46%;
+    opacity: 0.82;
+    transform: rotate(-1.4deg);
+    pointer-events: none;
+  }
+
+  .ring::after {
+    content: "";
+    position: absolute;
+    inset: 2px -4px -2px 4px;
+    border: 1.3px solid var(--pp-purple);
+    border-radius: inherit;
+    opacity: 0.4;
+  }
+
+  
+  .byline {
+    margin-top: 1rem;
+    font-size: 0.92rem;
+    letter-spacing: 0.03em;
+    color: var(--pp-blue);
+  }
+
+  .cols {
+    display: grid;
+    gap: 2.8rem;
+  }
+
+  @media (min-width: 1050px) {
+    .cols {
+      grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+      align-items: start;
+    }
+
+    .side {
+      grid-row: 1;
+      grid-column: 2;
+    }
+
+    .main {
+      grid-row: 1;
+      grid-column: 1;
+    }
+  }
+
+  .photo {
+    margin: 0 0 1.4rem;
+    padding: 10px;
+    background-color: var(--dp-color-scrap);
+    border: 1.5px solid color-mix(in srgb, var(--dp-color-line) 80%, transparent);
+    box-shadow: 3px 3px 0 rgba(56, 53, 47, 0.1);
+    transform: rotate(-0.6deg);
+  }
+
+  .photo img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .side-title {
+    margin: 1.7rem 0 0.6rem;
+    font-family: var(--dp-typography-display-face);
+    font-size: 1.32rem;
+    letter-spacing: 0.04em;
+    color: var(--pp-blue);
+  }
+
+  .side-title:first-of-type {
+    margin-top: 0;
+  }
+
+  .mini {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.98rem;
+  }
+
+  .mini td {
+    padding: 0.32rem 0;
+    border-bottom: 1px dashed color-mix(in srgb, var(--dp-color-line) 70%, transparent);
+    vertical-align: top;
+  }
+
+  .mini td:last-child {
+    padding-left: 1rem;
+    color: var(--dp-color-ink-muted);
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .group + .group {
+    margin-top: 0.9rem;
+  }
+
+  .group-title {
+    margin: 0.3rem 0 0.1rem;
+    font-size: 0.85rem;
+    letter-spacing: 0.1em;
+    color: var(--pp-blue);
+  }
+
+  .time-box {
+    margin-top: 1.9rem;
+    padding: 0.9rem 1.1rem 1rem;
+    border: 2px solid color-mix(in srgb, var(--pp-blue) 50%, transparent);
+    border-radius: 44% 56% 52% 48% / 10% 14% 11% 16%;
+    transform: rotate(-0.6deg);
+  }
+
+  .time-head {
+    display: flex;
+    justify-content: space-between;
+    padding-bottom: 0.35rem;
+    border-bottom: 1.5px solid color-mix(in srgb, var(--pp-blue) 35%, transparent);
+    font-size: 0.82rem;
+    letter-spacing: 0.14em;
+    color: var(--pp-blue);
+  }
+
+  .time-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 0.4rem;
+    font-size: 0.98rem;
+  }
+
+  .circle-no {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1.5px solid color-mix(in srgb, var(--pp-blue) 55%, transparent);
+    border-radius: 55% 45% 50% 50% / 50% 55% 45% 50%;
+    font-size: 0.78rem;
+    line-height: 1;
+    color: var(--pp-blue);
+  }
+
+  .tips-title {
+    margin-top: 2rem;
+  }
+
+  .tips {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    counter-reset: tip;
+  }
+
+  .tips li {
+    position: relative;
+    margin-top: 0.45rem;
+    padding-left: 1.5rem;
+    font-size: 0.94rem;
+    line-height: 1.8;
+    color: var(--dp-color-ink-muted);
+    counter-increment: tip;
+  }
+
+  .tips li::before {
+    content: counter(tip) ".";
+    position: absolute;
+    left: 0;
+    color: var(--pp-blue);
+  }
+
+  .step + .step {
+    margin-top: 2.5rem;
+  }
+
+  .step-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: baseline;
+  }
+
+  .step-label {
+    font-family: var(--dp-typography-display-face);
+    font-size: 1.05rem;
+    letter-spacing: 0.08em;
+    color: var(--pp-blue);
+  }
+
+  .step-name {
+    font-family: var(--dp-typography-display-face);
+    font-size: 1.34rem;
+    color: var(--dp-color-ink);
+  }
+
+  .step-time {
+    margin-left: auto;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    color: var(--pp-blue);
+  }
+
+  .step-items {
+    margin: 0.9rem 0 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .step-items li {
+    position: relative;
+    margin-top: 0.55rem;
+    padding-left: 1.5rem;
+    font-size: 1.04rem;
+    line-height: 1.92;
+  }
+
+  .step-items li::before {
+    content: "–";
+    position: absolute;
+    left: 0;
+    color: var(--pp-blue);
+  }
+
+  @media (max-width: 679px) {
+    .sheet {
+      padding: 1.5rem 1.25rem 4rem;
+    }
+
+    .step-time {
+      margin-left: 0;
+    }
+  }
+</style>

@@ -11,9 +11,20 @@ interface Props {
   image?: string;
   /** 右上角的手写批注 */
   note?: string;
+  /** 不收录（预览页用） */
+  noindex?: boolean;
+  /** 追加到 body 的 class（预览页用） */
+  bodyClass?: string;
 }
 
-const { title, description = '一个用 Astro 构建的静态食谱网站。', image, note } = Astro.props;
+const {
+  title,
+  description = '一个用 Astro 构建的静态食谱网站。',
+  image,
+  note,
+  noindex = false,
+  bodyClass,
+} = Astro.props;
 
 const siteUrl = Astro.site ?? new URL(Astro.url.origin);
 const canonical = new URL(Astro.url.pathname, siteUrl).href;
@@ -28,6 +39,7 @@ const pageTitle = title ? `${title} · 菜单` : '菜单';
     <meta name="generator" content={Astro.generator} />
     <title>{pageTitle}</title>
     <meta name="description" content={description} />
+    {noindex && <meta name="robots" content="noindex,nofollow" />}
     <link rel="canonical" href={canonical} />
     <link rel="icon" type="image/svg+xml" href={url('/favicon.svg')} />
 
@@ -39,7 +51,7 @@ const pageTitle = title ? `${title} · 菜单` : '菜单';
     {image && <meta property="og:image" content={image} />}
     <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
   </head>
-  <body class="min-h-screen">
+  <body class:list={['min-h-screen', bodyClass]}>
     <header class="mx-auto w-full max-w-6xl px-6 pt-8 sm:pt-10">
       <div class="flex items-start justify-between gap-6">
         <a href={url('/')} class="brand">菜单</a>

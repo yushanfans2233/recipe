@@ -12,9 +12,12 @@ const BASE = '/recipe';
 export default defineConfig({
   site: SITE,
   base: BASE,
-  integrations: [sitemap()],
+  integrations: [
+    // 预览页不进 sitemap
+    sitemap({ filter: (page) => !page.includes('/preview/') }),
+  ],
   markdown: {
-    // 菜谱里不需要代码高亮，保持纯黑白
+    // 菜谱里不需要代码高亮
     syntaxHighlight: false,
   },
   vite: {

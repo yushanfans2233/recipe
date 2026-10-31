@@ -50,6 +50,11 @@
   --dp-drawn-rule: url("../assets/deco/squiggle.svg");
   --dp-drawn-rule-strong: url("../assets/deco/squiggle-red.svg");
   --dp-paper-grain: url("../assets/deco/paper-grain.svg");
+
+  /* 方格纸 + 三色笔（详情页手稿版式） */
+  --pp-blue: #2f4e7a;
+  --pp-purple: #6b3aa1;
+  --pp-grid-line: rgba(47, 78, 122, 0.14);
 }
 
 /* ============================================================
@@ -519,6 +524,15 @@
   }
 
   /* ---------- 布局辅助 ---------- */
+  .paper-grid {
+    background-color: var(--dp-color-ground);
+    background-image:
+      linear-gradient(to right, var(--pp-grid-line) 1px, transparent 1px),
+      linear-gradient(to bottom, var(--pp-grid-line) 1px, transparent 1px);
+    background-size: 26px 26px;
+    background-position: -1px -1px;
+  }
+
   .font-display {
     font-family: var(--dp-typography-display-face);
   }
