@@ -3,17 +3,19 @@ import '../styles/global.css';
 import { url } from '../utils/url';
 
 interface Props {
-  /** 页面标题，会拼成「标题 · Recipe」。留空则使用站点标题。 */
+  /** 页面标题，会拼成「标题 · 菜单」。留空则使用站点名。 */
   title?: string;
   /** 页面描述，用于 meta description / og:description。 */
   description?: string;
+  /** 分享用的绝对图片地址（og:image） */
+  image?: string;
 }
 
-const { title, description = '一个用 Astro 构建的静态食谱网站。' } = Astro.props;
+const { title, description = '一个用 Astro 构建的静态食谱网站。', image } = Astro.props;
 
 const siteUrl = Astro.site ?? new URL(Astro.url.origin);
 const canonical = new URL(Astro.url.pathname, siteUrl).href;
-const pageTitle = title ? `${title} · Recipe` : 'Recipe · 食谱';
+const pageTitle = title ? `${title} · 菜单` : '菜单';
 ---
 
 <!doctype html>
@@ -28,20 +30,18 @@ const pageTitle = title ? `${title} · Recipe` : 'Recipe · 食谱';
     <link rel="icon" type="image/svg+xml" href={url('/favicon.svg')} />
 
     <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Recipe" />
+    <meta property="og:site_name" content="菜单" />
     <meta property="og:title" content={pageTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
+    {image && <meta property="og:image" content={image} />}
+    <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
   </head>
-  <body class="flex min-h-screen flex-col bg-stone-50 font-sans text-stone-800 antialiased">
-    <header class="border-b border-stone-200/80">
-      <div class="mx-auto flex h-16 w-full max-w-5xl items-center justify-between px-6">
-        <a href={url('/')} class="text-lg font-semibold tracking-tight text-stone-900">
-          Recipe
-        </a>
-        <nav class="flex items-center gap-6 text-sm text-stone-500">
-          <a href={url('/')} class="transition-colors hover:text-stone-900">首页</a>
-        </nav>
+  <body class="flex min-h-screen flex-col font-sans antialiased">
+    <header class="border-b border-neutral-200">
+      <div class="mx-auto flex w-full max-w-6xl items-baseline justify-between gap-6 px-6 py-5">
+        <a href={url('/')} class="text-base font-semibold tracking-tight">菜单</a>
+        <span class="text-[10px] tracking-[0.28em] text-neutral-400 uppercase">Recipe Archive</span>
       </div>
     </header>
 
@@ -49,20 +49,18 @@ const pageTitle = title ? `${title} · Recipe` : 'Recipe · 食谱';
       <slot />
     </main>
 
-    <footer class="border-t border-stone-200/80">
+    <footer class="mt-24 border-t border-neutral-200">
       <div
-        class="mx-auto flex w-full max-w-5xl flex-col gap-2 px-6 py-8 text-sm text-stone-500 sm:flex-row sm:items-center sm:justify-between"
+        class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-6 py-10 text-xs tracking-wide text-neutral-400 sm:flex-row sm:items-center sm:justify-between"
       >
-        <p>© {new Date().getFullYear()} Recipe</p>
+        <p>© {new Date().getFullYear()} 菜单</p>
         <p>
           Built with{' '}
           <a
             href="https://astro.build"
-            class="font-medium text-stone-700 transition-colors hover:text-orange-600"
-            rel="noopener"
+            class="text-neutral-600 transition-colors hover:text-black"
+            rel="noopener">Astro</a
           >
-            Astro
-          </a>
         </p>
       </div>
     </footer>

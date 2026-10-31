@@ -13,6 +13,10 @@ export default defineConfig({
   site: SITE,
   base: BASE,
   integrations: [sitemap()],
+  markdown: {
+    // 菜谱里不需要代码高亮，保持纯黑白
+    syntaxHighlight: false,
+  },
   vite: {
     plugins: [tailwindcss()],
   },

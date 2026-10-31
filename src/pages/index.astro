@@ -1,38 +1,94 @@
 ---
+import { Image } from 'astro:assets';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { CATEGORY_ORDER, coverFor, getRecipes, recipeUrl } from '../lib/recipes';
 
-const stack = [
-  { name: 'Astro', detail: '静态站点框架' },
-  { name: 'TypeScript', detail: 'strict 类型检查' },
-  { name: 'Tailwind CSS', detail: '样式与设计系统' },
-];
+const recipes = await getRecipes();
+const categories = CATEGORY_ORDER.filter((category) =>
+  recipes.some((recipe) => recipe.data.category === category),
+);
+
+const countOf = (category: string) =>
+  recipes.filter((recipe) => recipe.data.category === category).length;
 ---
 
-<BaseLayout title="首页" description="一个用 Astro 构建的静态食谱网站，正在搭建中。">
-  <section class="mx-auto w-full max-w-5xl px-6 pt-24 pb-20 sm:pt-32">
-    <p class="text-xs font-medium tracking-[0.2em] text-orange-600 uppercase">Recipe</p>
-    <h1
-      class="mt-5 max-w-2xl text-4xl leading-tight font-bold tracking-tight text-stone-900 sm:text-5xl"
-    >
-      好好做饭，<br class="hidden sm:block" />好好吃饭。
-    </h1>
-    <p class="mt-6 max-w-xl text-lg leading-relaxed text-stone-600">
-      一个用 Astro 构建的静态食谱网站，正在搭建中。接下来会逐步把内容、页面和视觉设计补上。
-    </p>
-
-    <ul class="mt-12 grid max-w-2xl gap-3 sm:grid-cols-3">
-      {
-        stack.map((item) => (
-          <li class="rounded-xl border border-stone-200 bg-white px-4 py-4">
-            <p class="font-medium text-stone-900">{item.name}</p>
-            <p class="mt-1 text-sm text-stone-500">{item.detail}</p>
-          </li>
-        ))
-      }
-    </ul>
-
-    <p class="mt-12 text-sm text-stone-400">
-      本地开发：<code class="rounded bg-stone-100 px-1.5 py-0.5 text-stone-600">npm run dev</code>
+<BaseLayout title="菜谱" description={`${recipes.length} 道家常菜谱，点击查看食材清单与制作步骤。`}>
+  <section class="mx-auto w-full max-w-6xl px-6 pt-16 sm:pt-24">
+    <h1 class="text-5xl font-semibold tracking-tight sm:text-6xl">菜谱</h1>
+    <p class="mt-6 max-w-md text-sm leading-relaxed text-neutral-500">
+      共 {recipes.length} 道菜。点击图片查看食材清单与做法。
     </p>
   </section>
+
+  <nav class="mx-auto mt-10 w-full max-w-6xl px-6" aria-label="按分类筛选">
+    <div class="flex flex-wrap items-center gap-x-8 gap-y-3 border-t border-neutral-900 pt-5 text-sm">
+      <button type="button" class="filter-btn" data-filter="all" aria-pressed="true">
+        全部 <span class="ml-1 text-[11px] text-neutral-400">{recipes.length}</span>
+      </button>
+      {
+        categories.map((category) => (
+          <button type="button" class="filter-btn" data-filter={category} aria-pressed="false">
+            {category} <span class="ml-1 text-[11px] text-neutral-400">{countOf(category)}</span>
+          </button>
+        ))
+      }
+    </div>
+  </nav>
+
+  <ul
+    class="mx-auto mt-12 grid w-full max-w-6xl grid-cols-1 gap-x-6 gap-y-12 px-6 sm:grid-cols-2 lg:grid-cols-3"
+  >
+    {
+      recipes.map((recipe) => {
+        const cover = coverFor(recipe.data.cover);
+        return (
+          <li class="group" data-category={recipe.data.category}>
+            <a href={recipeUrl(recipe.id)} class="block">
+              <div class="relative aspect-[4/3] overflow-hidden border border-neutral-200 bg-neutral-100">
+                {cover ? (
+                  <Image
+                    src={cover}
+                    alt={recipe.data.title}
+                    widths={[400, 800, 1200]}
+                    sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                    class="photo h-full w-full object-cover group-hover:scale-[1.03]"
+                    loading="lazy"
+                  />
+                ) : (
+                  <span class="flex h-full items-center justify-center text-3xl font-semibold tracking-tight text-neutral-300">
+                    {recipe.data.title}
+                  </span>
+                )}
+              </div>
+              <div class="mt-4 flex items-baseline justify-between gap-3">
+                <h2 class="text-base font-medium tracking-tight">{recipe.data.title}</h2>
+                <span class="shrink-0 text-[11px] tracking-[0.12em] text-neutral-400">
+                  {recipe.data.category}
+                </span>
+              </div>
+            </a>
+          </li>
+        );
+      })
+    }
+  </ul>
 </BaseLayout>
+
+<script>
+  const buttons = Array.from(document.querySelectorAll<HTMLButtonElement>('[data-filter]'));
+  const cards = Array.from(document.querySelectorAll<HTMLElement>('li[data-category]'));
+
+  function applyFilter(filter: string | undefined) {
+    for (const button of buttons) {
+      button.setAttribute('aria-pressed', String(button.dataset.filter === filter));
+    }
+    for (const card of cards) {
+      const visible = filter === 'all' || card.dataset.category === filter;
+      card.classList.toggle('hidden', !visible);
+    }
+  }
+
+  for (const button of buttons) {
+    button.addEventListener('click', () => applyFilter(button.dataset.filter));
+  }
+</script>

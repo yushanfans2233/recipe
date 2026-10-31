@@ -25,3 +25,6 @@ pnpm-debug.log*
 
 # local preview artifacts
 *.local
+
+# local screenshots
+.screenshots/
