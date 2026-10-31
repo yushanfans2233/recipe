@@ -28,3 +28,6 @@ pnpm-debug.log*
 
 # local screenshots
 .screenshots/
+
+# 字体源文件缓存（子集化产物在 src/assets/fonts/，会提交）
+.cache/

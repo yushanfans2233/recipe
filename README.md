@@ -1,6 +1,6 @@
 # 菜单 · Recipe
 
-一个用 [Astro](https://astro.build) 构建的静态食谱网站：黑白极简风格，首页展示全部菜品的图片与名字，点开查看食材清单与制作步骤。
+一个用 [Astro](https://astro.build) 构建的静态食谱网站：手写工作纸风格（暖色纸张、手写字体、贴纸式照片），首页展示全部菜品的图片与名字，点开查看食材清单与制作步骤。
 
 - 线上地址（待部署）：<https://yushanfans2233.github.io/recipe/>
 - 仓库：<https://github.com/yushanfans2233/recipe>
@@ -15,6 +15,7 @@
 | [Tailwind CSS](https://tailwindcss.com) | 4.3.3 | 样式 |
 | [@astrojs/sitemap](https://docs.astro.build/en/guides/integrations-guide/sitemap/) | 3.7.4 | sitemap 生成 |
 | [sharp](https://sharp.pixelplumbing.com) | 0.35.5 | 同步时压缩封面图 |
+| [subset-font](https://github.com/papandreou/subset-font) | 2.9.0 | 中文字体子集化 |
 
 > `@astrojs/check` 目前只支持 TypeScript 5/6，所以 TypeScript 固定在最新的 6.x，而不是 npm 上最新的 7.x。
 
@@ -27,6 +28,7 @@ npm run build   # 构建静态文件到 dist/
 npm run preview # 预览构建结果
 npm run check   # TypeScript / Astro 类型检查
 npm run sync    # 从 Obsidian 菜谱库同步内容与图片
+npm run fonts   # 按站点用字重新生成字体子集（新增菜谱后用）
 ```
 
 ## 内容来源
@@ -61,28 +63,37 @@ RECIPE_VAULT="D:/其他路径/菜谱库" RECIPE_IMAGES="D:/其他路径/图片" 
 recipe/
 ├── .github/workflows/deploy.yml   # 部署到 GitHub Pages 的工作流
 ├── public/favicon.svg
-├── scripts/sync-content.mjs       # Obsidian → 站点 同步脚本
+├── scripts/
+│   ├── sync-content.mjs           # Obsidian → 站点 同步脚本
+│   └── build-fonts.mjs            # 手写字体子集化
 ├── src/
+│   ├── assets/deco/               # 手绘线条、纸纹（SVG）
+│   ├── assets/fonts/              # 子集化后的 woff2（提交）
 │   ├── assets/recipes/            # 同步生成的封面图（WebP，提交）
+│   ├── components/PencilArrow.astro
 │   ├── content/recipes/           # 同步生成的 Markdown（提交）
 │   ├── layouts/BaseLayout.astro   # 全站骨架、SEO meta
 │   ├── lib/recipes.ts             # 取菜谱、排序、封面图、详情页地址
 │   ├── pages/
-│   │   ├── index.astro            # 首页：分类筛选 + 图片网格
+│   │   ├── index.astro            # 首页：分类筛选 + 图片墙
 │   │   ├── [slug].astro           # 菜谱详情页
 │   │   └── 404.astro
-│   ├── styles/global.css          # Tailwind 入口、黑白风格、正文排版
+│   ├── styles/global.css          # 设计令牌、纸张质感、正文排版
 │   ├── utils/url.ts               # 拼接带 base 的站内链接
 │   └── content.config.ts          # 内容集合 schema
 ├── astro.config.mjs
 └── package.json
 ```
 
-## 黑白风格
+## 视觉风格
 
-- 照片默认用 CSS 滤镜显示为黑白，鼠标悬停时恢复彩色。
-- 想全站显示彩色照片，把 `src/styles/global.css` 里的 `--photo-filter: grayscale(1)` 改成 `none` 即可。
-- 想彻底去掉灰度（连 hover 效果也不要），删掉 `.photo` 和 `.group:hover .photo` 两条规则。
+整体是一张手写工作纸：暖色纸底（`--dp-color-ground`）、铅灰墨色、蓝色批注、红色强调、黄色荧光笔。
+
+- 设计令牌集中在 `src/styles/global.css` 的 `:root` 里，改颜色 / 字号 / 控件圆角只需改这一处。
+- 标题用「站酷快乐体」，正文用「霞鹜文楷」，都以 `@font-face` 别名为 `Sketch Working Marker` / `Sketch Working Hand` 自托管，不依赖任何境外 CDN（Google Fonts 在国内会被墙）。
+- 中文手写字体原文件有 25MB+，所以按站点实际用字做了子集化：正文 228KB、标题 104KB。**新增菜谱后如果出现个别字回退成系统字体，跑一次 `npm run fonts` 重新生成即可。**
+- 封面照片保持自然彩色，放在贴了胶带的纸板上，轻微倾斜；悬停时照片框回正、阴影加深。
+- 装饰（胶带、箭头、波浪线）都是 `aria-hidden`，不影响读屏与阅读顺序，也不参与键盘焦点。
 
 ## 关于 base
 

@@ -1,0 +1,31 @@
+---
+interface Props {
+  /** 箭头方向 */
+  direction?: 'left' | 'right';
+  class?: string;
+}
+
+const { direction = 'left', class: className } = Astro.props;
+---
+
+<svg
+  class:list={['inline-block h-[0.6em] w-[1.15em] shrink-0 align-baseline', className]}
+  viewBox="0 0 26 14"
+  fill="none"
+  aria-hidden="true"
+  focusable="false"
+>
+  <g transform={direction === 'right' ? 'translate(26,0) scale(-1,1)' : undefined}>
+    <path
+      d="M24 7.4C17 6.6 9.6 6.8 3.2 7.2"
+      stroke="currentColor"
+      stroke-width="1.7"
+      stroke-linecap="round"></path>
+    <path
+      d="M8.4 2.5 3.2 7.2l5.6 4.2"
+      stroke="currentColor"
+      stroke-width="1.7"
+      stroke-linecap="round"
+      stroke-linejoin="round"></path>
+  </g>
+</svg>

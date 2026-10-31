@@ -14,7 +14,8 @@
     "preview": "astro preview",
     "check": "astro check",
     "sync": "node scripts/sync-content.mjs",
-    "astro": "astro"
+    "astro": "astro",
+    "fonts": "node scripts/build-fonts.mjs"
   },
   "dependencies": {
     "@astrojs/sitemap": "^3.7.4",
@@ -25,6 +26,7 @@
     "@tailwindcss/vite": "^4.3.3",
     "github-slugger": "^2.0.0",
     "sharp": "^0.35.5",
+    "subset-font": "^2.9.0",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "yaml": "^2.9.1"

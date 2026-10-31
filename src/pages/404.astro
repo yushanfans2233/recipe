@@ -1,16 +1,15 @@
 ---
+import PencilArrow from '../components/PencilArrow.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { url } from '../utils/url';
 ---
 
 <BaseLayout title="页面不存在" description="这一页不存在。">
-  <section class="mx-auto w-full max-w-6xl px-6 py-32 text-center">
-    <p class="text-[11px] tracking-[0.3em] text-neutral-400">404</p>
-    <h1 class="mt-4 text-3xl font-semibold tracking-tight">这一页不存在</h1>
-    <a
-      href={url('/')}
-      class="mt-8 inline-block border-b border-neutral-300 pb-1 text-sm transition-colors hover:border-black"
-    >
+  <section class="mx-auto w-full max-w-6xl px-6 py-28 text-center">
+    <p class="annotation">404</p>
+    <h1 class="statement mt-3 text-[clamp(2.2rem,6vw,3.4rem)]">这一页不存在</h1>
+    <a href={url('/')} class="sketch-btn mt-10">
+      <PencilArrow />
       回到全部菜谱
     </a>
   </section>

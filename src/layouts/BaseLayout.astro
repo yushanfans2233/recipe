@@ -9,9 +9,11 @@ interface Props {
   description?: string;
   /** 分享用的绝对图片地址（og:image） */
   image?: string;
+  /** 右上角的手写批注 */
+  note?: string;
 }
 
-const { title, description = '一个用 Astro 构建的静态食谱网站。', image } = Astro.props;
+const { title, description = '一个用 Astro 构建的静态食谱网站。', image, note } = Astro.props;
 
 const siteUrl = Astro.site ?? new URL(Astro.url.origin);
 const canonical = new URL(Astro.url.pathname, siteUrl).href;
@@ -37,31 +39,39 @@ const pageTitle = title ? `${title} · 菜单` : '菜单';
     {image && <meta property="og:image" content={image} />}
     <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
   </head>
-  <body class="flex min-h-screen flex-col font-sans antialiased">
-    <header class="border-b border-neutral-200">
-      <div class="mx-auto flex w-full max-w-6xl items-baseline justify-between gap-6 px-6 py-5">
-        <a href={url('/')} class="text-base font-semibold tracking-tight">菜单</a>
-        <span class="text-[10px] tracking-[0.28em] text-neutral-400 uppercase">Recipe Archive</span>
+  <body class="min-h-screen">
+    <header class="mx-auto w-full max-w-6xl px-6 pt-8 sm:pt-10">
+      <div class="flex items-start justify-between gap-6">
+        <a href={url('/')} class="brand">菜单</a>
+        {
+          note && (
+            <p class="note hidden pt-1 text-right sm:block" aria-hidden="false">
+              {note}
+            </p>
+          )
+        }
       </div>
+      <div class="rule-dashed mt-5" aria-hidden="true"></div>
     </header>
 
-    <main class="flex-1">
+    <main>
       <slot />
     </main>
 
-    <footer class="mt-24 border-t border-neutral-200">
-      <div
-        class="mx-auto flex w-full max-w-6xl flex-col gap-2 px-6 py-10 text-xs tracking-wide text-neutral-400 sm:flex-row sm:items-center sm:justify-between"
-      >
-        <p>© {new Date().getFullYear()} 菜单</p>
-        <p>
-          Built with{' '}
-          <a
-            href="https://astro.build"
-            class="text-neutral-600 transition-colors hover:text-black"
-            rel="noopener">Astro</a
-          >
-        </p>
+    <footer class="mx-auto mt-24 w-full max-w-6xl px-6 pb-14">
+      <p class="footer-statement">好好吃饭。</p>
+      <div class="rule-dashed mt-10">
+        <div class="flex flex-col gap-2 pt-5 text-[15px] text-muted sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} 菜单</p>
+          <p>
+            Built with{' '}
+            <a
+              href="https://astro.build"
+              class="text-annotation underline decoration-dotted underline-offset-4 hover:decoration-solid"
+              rel="noopener">Astro</a
+            >
+          </p>
+        </div>
       </div>
     </footer>
   </body>
