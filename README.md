@@ -127,3 +127,26 @@ base: '/recipe',
 3. 推送后，站点会发布到 <https://yushanfans2233.github.io/recipe/>。
 
 （这两步也可以直接让我来做。）
+
+## 待办：添加菜谱页
+
+三版样式已完成，线上可直接查看（预览页 `noindex`、不进 sitemap）：
+
+| 版式 | 地址 | 特点 |
+| --- | --- | --- |
+| A · 单页长表单 | <https://yushanfans2233.github.io/recipe/preview/add-a/> | 从上往下一次填完，最直接 |
+| B · 左填右预览 | <https://yushanfans2233.github.io/recipe/preview/add-b/> | 右边实时看到菜谱页效果 |
+| C · 分步向导 | <https://yushanfans2233.github.io/recipe/preview/add-c/> | 一次一屏，适合手机 |
+
+样板代码在 `src/components/preview/Add*.astro`，选定后再接表单逻辑与存储，并把 `/preview/` 目录删掉。
+
+### 存储方案备选（纯静态站，没有后端）
+
+1. **生成 + 手动归档**（零密钥）：浏览器生成 `.md` 和压缩好的 `.webp`，下载后放进 Obsidian 菜谱库，再跑 `npm run sync`。
+2. **GitHub API 直传**（体验最好，仍无服务器）：填一个 Fine-grained PAT（只授本仓库 Contents 读写），保存时直接 commit 到 `src/content/recipes/`，触发 Actions 自动部署。
+3. **Supabase / Firebase**：真数据库，多端同步，但引入第三方依赖，且与 Obsidian 形成两份真源。
+4. **Cloudflare Workers + D1/KV**：同样要维护后端，不推荐这个量级。
+
+倾向 1 + 2 组合：默认导出文件，需要一键上线时再填 token。
+
+> 注意：`npm run sync` 会清空并重建 `src/content/recipes/`。如果走方案 2，网页新增的菜谱需要打 `source: web` 标记，同步时保留、不要删。
