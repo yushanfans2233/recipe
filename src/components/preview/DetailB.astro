@@ -1,0 +1,270 @@
+---
+import { Image } from 'astro:assets';
+import type { ImageMetadata } from 'astro';
+import type { RecipeParts } from '../../lib/recipe-html';
+
+interface Props {
+  title: string;
+  category: string;
+  tags: string[];
+  cover?: ImageMetadata;
+  parts: RecipeParts;
+}
+
+const { title, category, cover, parts } = Astro.props;
+---
+
+<article class="recipe-body page">
+  <header class="head">
+    <p class="kicker">{category}</p>
+    <h1 class="title">{title}</h1>
+    <p class="meta">{parts.steps.length} 个步骤</p>
+    {
+      cover && (
+        <figure class="thumb">
+          <Image src={cover} alt={title} widths={[320]} class="thumb-img" />
+        </figure>
+      )
+    }
+  </header>
+
+  <section class="facts">
+    {
+      parts.sideSections.map((section) =>
+        section.groups.map((group) => <div class="fact-group" set:html={group} />),
+      )
+    }
+  </section>
+
+  <section class="process">
+    <p class="section-label">制作流程</p>
+    {parts.steps.map((block) => <Fragment set:html={block} />)}
+  </section>
+
+  {parts.tips && <section class="tips" set:html={parts.tips} />}
+</article>
+
+<style>
+  .page {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2.2rem 1.5rem 4rem;
+  }
+
+  .head {
+    position: relative;
+    padding-right: 170px;
+    padding-bottom: 1.3rem;
+    border-bottom: 2px solid var(--dp-color-ink);
+  }
+
+  .kicker {
+    font-size: 0.76rem;
+    letter-spacing: 0.26em;
+    color: var(--dp-color-annotation);
+  }
+
+  .title {
+    margin-top: 0.25rem;
+    font-family: var(--dp-typography-display-face);
+    font-size: clamp(2rem, 4vw, 2.5rem);
+    line-height: 1.15;
+  }
+
+  .meta {
+    margin-top: 0.35rem;
+    font-size: 0.86rem;
+    color: var(--dp-color-ink-muted);
+  }
+
+  .thumb {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 150px;
+    padding: 5px;
+    background-color: var(--dp-color-scrap);
+    border: 1.5px solid color-mix(in srgb, var(--dp-color-line) 75%, transparent);
+    transform: rotate(-0.8deg);
+  }
+
+  .thumb-img {
+    display: block;
+    width: 100%;
+    height: 92px;
+    object-fit: cover;
+  }
+
+  .facts {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 1.6rem 2.4rem;
+    margin-top: 1.8rem;
+    padding-bottom: 1.6rem;
+    border-bottom: 1px solid color-mix(in srgb, var(--dp-color-line) 50%, transparent);
+  }
+
+  .facts :global(h3) {
+    margin: 0 0 0.35rem;
+    font-family: var(--dp-typography-reading-face);
+    font-size: 0.76rem;
+    font-weight: 400;
+    letter-spacing: 0.2em;
+    color: var(--dp-color-annotation);
+  }
+
+  .facts :global(p) {
+    margin: 0.9rem 0 0.15rem;
+    font-size: 0.74rem;
+    letter-spacing: 0.18em;
+    color: var(--dp-color-annotation);
+  }
+
+  .facts :global(table) {
+    width: 100%;
+    margin: 0;
+    border-collapse: collapse;
+    font-size: 1rem;
+    line-height: 1.6;
+  }
+
+  .facts :global(thead) {
+    display: none;
+  }
+
+  .facts :global(td) {
+    padding: 0.3rem 0;
+    border-bottom: 1px dotted color-mix(in srgb, var(--dp-color-line) 65%, transparent);
+    background: none;
+  }
+
+  .facts :global(td:last-child) {
+    padding-left: 0.8rem;
+    color: var(--dp-color-ink-muted);
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .process {
+    margin-top: 2rem;
+    counter-reset: stepblock;
+  }
+
+  .section-label {
+    margin-bottom: 0.6rem;
+    font-size: 0.76rem;
+    letter-spacing: 0.26em;
+    color: var(--dp-color-annotation);
+  }
+
+  .process :global(.step-block) {
+    counter-increment: stepblock;
+    padding: 1.3rem 0 0 3rem;
+    border-top: 1px solid color-mix(in srgb, var(--dp-color-line) 45%, transparent);
+  }
+
+  .process :global(.step-block:first-of-type) {
+    border-top: 0;
+  }
+
+  .process :global(.step-block h3) {
+    display: flex;
+    gap: 0.7rem;
+    align-items: baseline;
+    margin: 0 0 0.6rem -3rem;
+    padding: 0;
+    background: none;
+    font-size: 1.42rem;
+    line-height: 1.3;
+  }
+
+  .process :global(.step-name) {
+    font-family: var(--dp-typography-display-face);
+  }
+
+  .process :global(.step-block h3::before) {
+    content: counter(stepblock);
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.7rem;
+    height: 1.7rem;
+    border: 1.5px solid color-mix(in srgb, var(--dp-color-accent) 45%, transparent);
+    border-radius: 58% 42% 55% 45% / 45% 55% 48% 52%;
+    font-family: var(--dp-typography-display-face);
+    font-size: 0.8rem;
+    color: var(--dp-color-accent);
+    transform: translateY(0.1rem);
+  }
+
+  .process :global(.step-time) {
+    margin-left: auto;
+    font-family: var(--dp-typography-reading-face);
+    font-size: 0.8rem;
+    letter-spacing: 0.06em;
+    color: var(--dp-color-annotation);
+  }
+
+  .process :global(.step-block > ol) {
+    margin: 0;
+    padding-left: 0;
+    counter-reset: none;
+  }
+
+  .process :global(.step-block > ol > li) {
+    margin-top: 0.45rem;
+    padding-left: 1.2rem;
+    font-size: 1.14rem;
+    line-height: 1.95;
+    counter-increment: none;
+  }
+
+  .process :global(.step-block > ol > li)::before {
+    content: "·";
+    top: 0.1em;
+    width: auto;
+    height: auto;
+    border: 0;
+    background: none;
+    color: var(--dp-color-line);
+  }
+
+  .process :global(.step-block strong) {
+    background: none;
+    font-weight: 700;
+    font-synthesis: weight;
+  }
+
+  .tips {
+    margin-top: 2.4rem;
+    padding-top: 1.3rem;
+    border-top: 1px solid color-mix(in srgb, var(--dp-color-line) 45%, transparent);
+  }
+
+  .tips :global(h2) {
+    margin: 0 0 0.9rem;
+    border: 0;
+    background: none;
+    font-size: 0.76rem;
+    letter-spacing: 0.26em;
+    color: var(--dp-color-annotation);
+  }
+
+  .tips :global(ol > li) {
+    font-size: 0.97rem;
+    line-height: 1.9;
+  }
+
+  @media (max-width: 679px) {
+    .head {
+      padding-right: 0;
+    }
+
+    .thumb {
+      position: static;
+      margin-top: 1rem;
+      transform: none;
+    }
+  }
+</style>

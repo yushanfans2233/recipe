@@ -1,8 +1,14 @@
 ---
+import { getCollection, render } from 'astro:content';
 import AddA from '../../components/preview/AddA.astro';
 import AddB from '../../components/preview/AddB.astro';
 import AddC from '../../components/preview/AddC.astro';
+import DetailA from '../../components/preview/DetailA.astro';
+import DetailB from '../../components/preview/DetailB.astro';
+import DetailC from '../../components/preview/DetailC.astro';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import { splitRecipeContent } from '../../lib/recipe-html';
+import { coverFor } from '../../lib/recipes';
 import { url } from '../../utils/url';
 
 export function getStaticPaths() {
@@ -10,40 +16,59 @@ export function getStaticPaths() {
     { params: { variant: 'add-a' } },
     { params: { variant: 'add-b' } },
     { params: { variant: 'add-c' } },
+    { params: { variant: 'detail-1' } },
+    { params: { variant: 'detail-2' } },
+    { params: { variant: 'detail-3' } },
   ];
 }
 
 const VARIANTS = {
-  'add-a': { label: 'A · 单页长表单', desc: '从上往下一次填完，最简单直接' },
-  'add-b': { label: 'B · 左填右预览', desc: '右边实时看到菜谱页长什么样' },
-  'add-c': { label: 'C · 分步向导', desc: '一次一屏，填起来压力小，适合手机' },
+  'add-a': { label: '添加页 A · 单页长表单', desc: '从上往下一次填完' },
+  'add-b': { label: '添加页 B · 左填右预览', desc: '右边实时看到菜谱页效果' },
+  'add-c': { label: '添加页 C · 分步向导', desc: '一次一屏，适合手机' },
+  'detail-1': { label: '详情 1 · 常驻食材条', desc: '左边食材固定不动，右边单列步骤，做饭时不用回头翻' },
+  'detail-2': { label: '详情 2 · 上下分区', desc: '食材调味先横排，步骤通栏在下，最整齐' },
+  'detail-3': { label: '详情 3 · 一屏速查', desc: '紧凑版，食材和步骤同屏看完，不用滚动' },
 } as const;
 
 const { variant } = Astro.params;
 const key = (variant ?? 'add-a') as keyof typeof VARIANTS;
-const current = VARIANTS[key] ?? VARIANTS['add-a'];
-const Component = key === 'add-b' ? AddB : key === 'add-c' ? AddC : AddA;
+const current = VARIANTS[key];
+const group = key.split('-')[0];
+const siblings = Object.entries(VARIANTS).filter(([k]) => k.startsWith(group + '-'));
+
+const entries = await getCollection('recipes');
+const entry = entries.find((item) => item.id === '白灼菜心') ?? entries[0];
+const { Content } = await render(entry);
+const parts = await splitRecipeContent(Content);
+const cover = coverFor(entry.data.cover);
 ---
 
-<BaseLayout title={`添加页 ${key.toUpperCase()}`} description="添加菜谱页版式样例" noindex note="版式样例">
+<BaseLayout title={current.label} description="菜谱页版式样例" noindex note="版式样例">
   <div class="intro">
     <p class="intro-kicker">{current.label}</p>
     <p class="intro-desc">{current.desc}</p>
+    {group === 'detail' && <p class="intro-sample">样例菜品：{entry.data.title}</p>}
   </div>
 
-  <Component />
+  {key === 'detail-1' && <DetailA title={entry.data.title} category={entry.data.category} tags={entry.data.tags} cover={cover} parts={parts} />}
+  {key === 'detail-2' && <DetailB title={entry.data.title} category={entry.data.category} tags={entry.data.tags} cover={cover} parts={parts} />}
+  {key === 'detail-3' && <DetailC title={entry.data.title} category={entry.data.category} tags={entry.data.tags} parts={parts} />}
+
+  {key === 'add-a' && <AddA />}
+  {key === 'add-b' && <AddB />}
+  {key === 'add-c' && <AddC />}
 
   <nav class="switcher" aria-label="切换样例">
-    <span class="switcher-label">版式</span>
     {
-      Object.entries(VARIANTS).map(([variantKey, item]) => (
+      siblings.map(([variantKey, item]) => (
         <a
           href={url(`/preview/${variantKey}/`)}
           class:list={['switcher-link', { 'is-current': variantKey === key }]}
           aria-current={variantKey === key ? 'page' : undefined}
           title={item.label}
         >
-          {variantKey.replace('add-', '').toUpperCase()}
+          {variantKey.replace(group + '-', '').toUpperCase()}
         </a>
       ))
     }
@@ -54,20 +79,26 @@ const Component = key === 'add-b' ? AddB : key === 'add-c' ? AddC : AddA;
   .intro {
     max-width: 1180px;
     margin: 0 auto;
-    padding: 1.5rem 1.5rem 0;
+    padding: 1.4rem 1.5rem 0;
   }
 
   .intro-kicker {
     font-family: var(--dp-typography-display-face);
-    font-size: 1.05rem;
+    font-size: 1rem;
     letter-spacing: 0.04em;
     color: var(--dp-color-accent);
   }
 
   .intro-desc {
-    margin-top: 0.25rem;
-    font-size: 0.92rem;
+    margin-top: 0.2rem;
+    font-size: 0.9rem;
     color: var(--dp-color-annotation);
+  }
+
+  .intro-sample {
+    margin-top: 0.15rem;
+    font-size: 0.78rem;
+    color: var(--dp-color-ink-muted);
   }
 
   .switcher {
@@ -78,17 +109,11 @@ const Component = key === 'add-b' ? AddB : key === 'add-c' ? AddC : AddA;
     display: flex;
     gap: 0.3rem;
     align-items: center;
-    padding: 0.25rem 0.45rem 0.25rem 0.8rem;
+    padding: 0.25rem 0.4rem;
     background-color: var(--dp-color-scrap);
     border: 1.5px solid color-mix(in srgb, var(--dp-color-ink) 35%, transparent);
     border-radius: 999px;
     box-shadow: 3px 3px 0 rgba(56, 53, 47, 0.12);
-  }
-
-  .switcher-label {
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-    color: var(--dp-color-ink-muted);
   }
 
   .switcher-link {
