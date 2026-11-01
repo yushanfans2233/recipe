@@ -13,6 +13,9 @@ interface Props {
 
 const { title, category, tags, cover, parts } = Astro.props;
 
+const ingredientCells = (parts.side.join('').match(/<tr>[\s\S]*?<\/tr>/g) ?? []).filter((row) => row.includes('<td'));
+const ingredientCount = ingredientCells.length + (parts.side.join('').match(/<li>/g) ?? []).length;
+
 const minutes = [...parts.steps.join('').matchAll(/step-time">(\d+)\s*(?:min|分钟)/g)]
   .map((match) => Number(match[1]))
   .reduce((sum, value) => sum + value, 0);
@@ -37,14 +40,19 @@ const minutes = [...parts.steps.join('').matchAll(/step-time">(\d+)\s*(?:min|分
   </header>
 
   <div class="layout">
-    <aside class="rail" data-ingredients>
-      <div class="rail-head">
-        <span class="rail-label">食材</span>
-        <button type="button" class="copy-btn" data-copy-ingredients aria-label="复制全部食材">
-          <span data-copy-label>复制</span>
-        </button>
-      </div>
-      {parts.side.map((block) => <Fragment set:html={block} />)}
+    <aside class="rail">
+      <details class="rail-details" open data-rail>
+        <summary class="rail-head">
+          <span class="rail-label">食材</span>
+          <span class="rail-count">{ingredientCount} 项</span>
+          <button type="button" class="copy-btn" data-copy-ingredients aria-label="复制全部食材">
+            <span data-copy-label>复制</span>
+          </button>
+        </summary>
+        <div class="rail-body" data-ingredients>
+          {parts.side.map((block) => <Fragment set:html={block} />)}
+        </div>
+      </details>
     </aside>
 
     <div class="manual">
@@ -124,12 +132,31 @@ const minutes = [...parts.steps.join('').matchAll(/step-time">(\d+)\s*(?:min|分
     border-right: 1px solid color-mix(in srgb, var(--dp-color-line) 45%, transparent);
   }
 
+  .rail-details {
+    display: block;
+  }
+
   .rail-head {
     display: flex;
     gap: 0.7rem;
     align-items: center;
     justify-content: space-between;
+    width: 100%;
     margin-bottom: 0.5rem;
+    list-style: none;
+    cursor: default;
+  }
+
+  .rail-head::-webkit-details-marker {
+    display: none;
+  }
+
+  .rail-count {
+    display: none;
+    margin-right: auto;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    color: var(--dp-color-ink-muted);
   }
 
   .rail-label {
@@ -140,6 +167,7 @@ const minutes = [...parts.steps.join('').matchAll(/step-time">(\d+)\s*(?:min|分
   }
 
   .copy-btn {
+    flex: none;
     padding: 0.05rem 0.6rem 0.12rem;
     border: 1.5px dashed color-mix(in srgb, var(--dp-color-line) 95%, transparent);
     border-radius: clamp(6px, 1vw, 10px);
@@ -395,6 +423,40 @@ const minutes = [...parts.steps.join('').matchAll(/step-time">(\d+)\s*(?:min|分
 
     .rail {
       position: static;
+      padding-bottom: 0.4rem;
+    }
+
+    .rail-head {
+      margin-bottom: 0;
+      padding: 0.5rem 0;
+      cursor: pointer;
+    }
+
+    .rail-head::after {
+      content: "▾";
+      font-size: 0.8rem;
+      color: var(--dp-color-annotation);
+    }
+
+    .rail-details[open] .rail-head {
+      margin-bottom: 0.6rem;
+    }
+
+    .rail-details[open] .rail-head::after {
+      content: "▴";
+    }
+
+    .rail-count {
+      display: inline;
+    }
+
+    .manual :global(.step-block > ol > li) {
+      font-size: 1.05rem;
+      line-height: 1.9;
+    }
+
+    .rail {
+      position: static;
       padding-right: 0;
       border-right: 0;
       border-bottom: 1px solid color-mix(in srgb, var(--dp-color-line) 45%, transparent);
@@ -447,7 +509,19 @@ const minutes = [...parts.steps.join('').matchAll(/step-time">(\d+)\s*(?:min|分
     }
   }
 
-  button?.addEventListener('click', async () => {
+  // 桌面默认展开，手机默认收起；复制按钮不触发折叠
+  const details = document.querySelector<HTMLDetailsElement>('[data-rail]');
+  const mobile = window.matchMedia('(max-width: 899px)');
+  const syncRail = () => {
+    if (details) details.open = !mobile.matches;
+  };
+  syncRail();
+  mobile.addEventListener('change', syncRail);
+
+  button?.addEventListener('click', async (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+
     const text = collectIngredients();
     if (!text) return;
 

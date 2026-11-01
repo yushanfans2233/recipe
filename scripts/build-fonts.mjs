@@ -2,14 +2,17 @@
 /**
  * 把源字体按站点实际用字做子集化，输出到 src/assets/fonts/。
  *
- * 中文手写字体动辄 20MB+，直接引入不可接受；这里只保留页面里出现过的字，
- * 生成 200~500KB 的 woff2。新增菜谱后如果出现缺字（会回退到系统字体），
- * 重新跑一次 `npm run fonts` 即可。
+ * 可以命令行直接跑（npm run fonts），也可以被同步脚本 import 调用：
+ *   const changed = await buildFonts({ quiet: true });
+ *
+ * 同时把用到的字符集写到 src/assets/fonts/subset-chars.json，
+ * 供 scripts/check-fonts.mjs 检查「内容出现新字但字体没重建」。
  *
  * 源字体（首次运行会下载到 .cache/fonts/，不进仓库）：
  *   LXGW WenKai   正文字体，SIL OFL 1.1
  *   ZCOOL KuaiLe  标题字体，SIL OFL 1.1
  */
+import { createHash } from 'node:crypto';
 import { existsSync } from 'node:fs';
 import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
@@ -17,12 +20,13 @@ import subsetFont from 'subset-font';
 
 const CACHE_DIR = '.cache/fonts';
 const OUT_DIR = 'src/assets/fonts';
+const CHARS_FILE = path.join(OUT_DIR, 'subset-chars.json');
 
-/** 扫描这些目录/文件里的文字，决定子集范围 */
 const TEXT_SOURCES = [
 	'src/content',
 	'src/pages',
 	'src/layouts',
+	'src/components',
 	'src/lib',
 	'src/utils',
 	'src/styles',
@@ -46,35 +50,32 @@ const FONTS = [
 	},
 ];
 
-/** 始终保留的基础字符：ASCII、数字、常用中英标点 */
 const BASE_CHARS = (() => {
 	const ascii = Array.from({ length: 95 }, (_, index) => String.fromCharCode(32 + index)).join('');
-	const extra =
-		'，。、；：！？…—～·「」『』（）《》〈〉【】“”‘’％℃±×÷≈≤≥°′″　';
+	const extra = '，。、；：！？…—～·「」『』（）《》〈〉【】“”‘’％℃±×÷≈≤≥°′″　';
 	return ascii + extra;
 })();
 
-async function collectText(dir) {
-	const stats = await stat(dir).catch(() => null);
+async function collectText(target) {
+	const stats = await stat(target).catch(() => null);
 	if (!stats) return '';
 
 	if (stats.isFile()) {
-		if (!/\.(astro|md|ts|mjs|css|json)$/.test(dir)) return '';
-		return readFile(dir, 'utf8');
+		if (!/\.(astro|md|ts|mjs|css|json)$/.test(target)) return '';
+		return readFile(target, 'utf8');
 	}
 
-	const entries = await readdir(dir, { withFileTypes: true });
-	const chunks = await Promise.all(entries.map((entry) => collectText(path.join(dir, entry.name))));
+	const entries = await readdir(target, { withFileTypes: true });
+	const chunks = await Promise.all(entries.map((entry) => collectText(path.join(target, entry.name))));
 	return chunks.join('');
 }
 
-async function collectCharacters() {
+export async function collectCharacters() {
 	const text = (await Promise.all(TEXT_SOURCES.map((source) => collectText(source)))).join('');
 	const chars = new Set(BASE_CHARS);
 
 	for (const char of text) {
 		const code = char.codePointAt(0);
-		// 跳过控制字符
 		if (code === undefined || code < 0x20) continue;
 		chars.add(char);
 	}
@@ -94,12 +95,33 @@ async function ensureSource(font) {
 	return target;
 }
 
-async function main() {
+async function readCharsState() {
+	const raw = await readFile(CHARS_FILE, 'utf8').catch(() => null);
+	if (!raw) return null;
+	try {
+		return JSON.parse(raw);
+	} catch {
+		return null;
+	}
+}
+
+/**
+ * 重建字体子集。
+ * @param {{ quiet?: boolean, force?: boolean }} options
+ * @returns {Promise<boolean>} 是否真的重建了
+ */
+export async function buildFonts({ quiet = false, force = false } = {}) {
 	const characters = await collectCharacters();
-	const uniqueCount = [...characters].length;
+	const hash = createHash('sha1').update(characters).digest('hex').slice(0, 12);
+	const previous = await readCharsState();
+
+	if (!force && previous?.hash === hash && existsSync(path.join(OUT_DIR, FONTS[0].output))) {
+		if (!quiet) console.log(`字体子集已是最新（${[...characters].length} 字）`);
+		return false;
+	}
 
 	await mkdir(OUT_DIR, { recursive: true });
-	console.log(`\n子集字符数：${uniqueCount}`);
+	if (!quiet) console.log(`\n子集字符数：${[...characters].length}`);
 
 	for (const font of FONTS) {
 		const sourcePath = await ensureSource(font);
@@ -109,19 +131,25 @@ async function main() {
 		const outPath = path.join(OUT_DIR, font.output);
 		await writeFile(outPath, subset);
 
-		const before = (await stat(sourcePath)).size;
-		const after = subset.length;
-		const mb = (bytes) => `${(bytes / 1024 / 1024).toFixed(1)}MB`;
-		const kb = (bytes) => `${Math.round(bytes / 1024)}KB`;
-		console.log(
-			`  ${font.family.padEnd(22)} ${mb(before)} → ${kb(after)}  ${path.relative(process.cwd(), outPath)}`,
-		);
+		if (!quiet) {
+			const before = (await stat(sourcePath)).size;
+			const mb = (bytes) => `${(bytes / 1024 / 1024).toFixed(1)}MB`;
+			const kb = (bytes) => `${Math.round(bytes / 1024)}KB`;
+			console.log(
+				`  ${font.family.padEnd(22)} ${mb(before)} → ${kb(subset.length)}  ${path.relative(process.cwd(), outPath)}`,
+			);
+		}
 	}
 
-	console.log('\n字体已更新。\n');
+	await writeFile(CHARS_FILE, JSON.stringify({ hash, chars: characters }), 'utf8');
+	if (!quiet) console.log('\n字体已更新。\n');
+	return true;
 }
 
-main().catch((error) => {
-	console.error(error);
-	process.exit(1);
-});
+const isDirectRun = process.argv[1]?.replace(/\\/g, '/').endsWith('scripts/build-fonts.mjs');
+if (isDirectRun) {
+	buildFonts().catch((error) => {
+		console.error(error);
+		process.exit(1);
+	});
+}

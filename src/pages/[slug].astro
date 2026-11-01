@@ -5,6 +5,7 @@ import PencilArrow from '../components/PencilArrow.astro';
 import RecipeView from '../components/RecipeView.astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { splitRecipeContent } from '../lib/recipe-html';
+import { parseRecipeMarkdown } from '../lib/recipe-parse';
 import { getRecipes, coverFor, recipeUrl, type Recipe } from '../lib/recipes';
 import { url } from '../utils/url';
 
@@ -36,9 +37,28 @@ const siteUrl = Astro.site ?? new URL(Astro.url.origin);
 const coverUrl = cover ? new URL(cover.src, siteUrl).href : undefined;
 
 const description = `${title}（${category}）的食材清单与制作步骤。`;
+
+const parsed = parseRecipeMarkdown(recipe.body ?? '');
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'Recipe',
+  name: title,
+  description,
+  image: coverUrl ? [coverUrl] : undefined,
+  recipeCategory: category,
+  keywords: tags.join(', ') || undefined,
+  totalTime: recipe.data.time ? `PT${recipe.data.time}M` : undefined,
+  recipeIngredient: [...parsed.ingredients, ...parsed.seasoning],
+  recipeInstructions: parsed.steps.map((step) => ({
+    '@type': 'HowToStep',
+    name: step.name,
+    text: step.items.join('；'),
+  })),
+};
 ---
 
 <BaseLayout title={title} description={description} image={coverUrl} note={category}>
+  <script type="application/ld+json" set:html={JSON.stringify(structuredData)} is:inline />
   <div class="mx-auto w-full max-w-[1080px] px-6 pt-8">
     <a
       href={url('/')}

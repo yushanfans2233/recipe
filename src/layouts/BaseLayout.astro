@@ -74,7 +74,10 @@ const pageTitle = title ? `${title} · 菜单` : '菜单';
       <p class="footer-statement">好好吃饭。</p>
       <div class="rule-dashed mt-10">
         <div class="flex flex-col gap-2 pt-5 text-[15px] text-muted sm:flex-row sm:items-center sm:justify-between">
-          <p>© {new Date().getFullYear()} 菜单</p>
+          <p class="flex items-center gap-3">
+            <span>© {new Date().getFullYear()} 菜单</span>
+            <a href={url('/add/')} class="text-annotation underline decoration-dotted underline-offset-4 hover:decoration-solid">添加菜谱</a>
+          </p>
           <p>
             Built with{' '}
             <a

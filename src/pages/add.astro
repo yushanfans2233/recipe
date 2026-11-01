@@ -1,0 +1,760 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout title="添加菜谱" description="在浏览器里填好菜谱，导出 Markdown 和压缩好的封面图。" note="添加">
+  <div class="form-shell">
+    <header class="add-head">
+      <p class="form-kicker">新建菜谱</p>
+      <h1 class="form-title">添加菜谱</h1>
+      <p class="form-hint">
+        填完点「下载 Markdown」，把 md 放进菜谱库对应分类、图片放进「图片」目录，再跑一次
+        <code>npm run sync</code> 就上线了。
+      </p>
+    </header>
+
+    <div class="add-split">
+      <form class="add-form" id="recipe-form" autocomplete="off">
+        <section class="form-section">
+          <h2 class="form-section-title"><span class="form-step-no">1</span>基本信息</h2>
+
+          <div class="form-grid three">
+            <label class="form-field">
+              <span class="form-label">菜名</span>
+              <input class="form-input" type="text" name="title" placeholder="比如：醋炝豆芽" required />
+            </label>
+            <label class="form-field">
+              <span class="form-label">分类</span>
+              <select class="form-select" name="category">
+                <option>蔬菜</option>
+                <option>蛋白质</option>
+                <option>主食</option>
+              </select>
+            </label>
+            <label class="form-field">
+              <span class="form-label">标签（逗号分隔）</span>
+              <input class="form-input" type="text" name="tags" placeholder="早饭, 素菜" />
+            </label>
+          </div>
+
+          <div class="form-photo-row">
+            <label class="form-field">
+              <span class="form-label">封面照片</span>
+              <input class="form-input" type="file" accept="image/*" name="photo" />
+              <span class="form-hint">会压成 WebP，最长边 1600px</span>
+            </label>
+            <figure class="form-photo-preview" hidden>
+              <img alt="" data-photo-preview />
+            </figure>
+          </div>
+        </section>
+
+        <section class="form-section">
+          <h2 class="form-section-title"><span class="form-step-no">2</span>食材</h2>
+
+          <p class="form-group-label">主食材</p>
+          <div class="form-rows" data-rows="main"></div>
+          <button type="button" class="form-add" data-add-row="main">+ 添加食材</button>
+
+          <p class="form-group-label">调味</p>
+          <div class="form-rows" data-rows="seasoning"></div>
+          <button type="button" class="form-add" data-add-row="seasoning">+ 添加调味</button>
+        </section>
+
+        <section class="form-section">
+          <h2 class="form-section-title"><span class="form-step-no">3</span>制作流程</h2>
+          <div class="form-rows" data-rows="steps"></div>
+          <button type="button" class="form-add" data-add-row="steps">+ 添加步骤</button>
+        </section>
+
+        <section class="form-section">
+          <h2 class="form-section-title"><span class="form-step-no">4</span>TIPS</h2>
+          <label class="form-field">
+            <span class="form-label">注意事项（一行一条，可留空）</span>
+            <textarea class="form-textarea" name="tips" style="min-height: 6rem" placeholder=""></textarea>
+          </label>
+        </section>
+      </form>
+
+      <aside class="add-preview">
+        <p class="aside-label">预览</p>
+        <div class="preview-card">
+          <div class="preview-photo" data-preview-photo>封面照片</div>
+          <div class="preview-body">
+            <p class="preview-title" data-preview-title>菜名</p>
+            <p class="preview-meta" data-preview-meta>分类 · 0 步</p>
+            <div class="preview-facts" data-preview-facts></div>
+            <div class="preview-steps" data-preview-steps></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="sketch-btn btn-primary" data-action="download-md">下载 Markdown</button>
+      <button type="button" class="sketch-btn" data-action="download-image">下载压缩图</button>
+      <button type="button" class="sketch-btn" data-action="copy">复制 Markdown</button>
+      <button type="button" class="sketch-btn" data-action="reset">清空</button>
+    </div>
+
+    <p class="copy-status" role="status" aria-live="polite" data-status></p>
+  </div>
+</BaseLayout>
+
+<style is:global>
+  .form-shell {
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 3rem;
+  }
+
+  .form-kicker {
+    font-size: 0.76rem;
+    letter-spacing: 0.2em;
+    color: var(--dp-color-accent);
+  }
+
+  .form-title {
+    margin-top: 0.2rem;
+    font-family: var(--dp-typography-display-face);
+    font-size: clamp(1.8rem, 3.4vw, 2.3rem);
+    line-height: 1.1;
+  }
+
+  .form-hint {
+    margin-top: 0.5rem;
+    font-size: 0.92rem;
+    line-height: 1.7;
+    color: var(--dp-color-ink-muted);
+  }
+
+  .form-hint code {
+    padding: 0.05em 0.35em;
+    border-radius: 4px;
+    background-color: color-mix(in srgb, var(--dp-color-highlight) 45%, transparent);
+    font-size: 0.9em;
+  }
+
+  .form-section {
+    position: relative;
+    margin-top: 1.7rem;
+    padding: 1.4rem 1.4rem 1.5rem;
+    background-color: var(--dp-color-scrap);
+    border: 1.5px solid color-mix(in srgb, var(--dp-color-line) 75%, transparent);
+    border-radius: var(--dp-radius-control);
+    box-shadow: 3px 3px 0 rgba(56, 53, 47, 0.08);
+  }
+
+  .form-section::before {
+    content: "";
+    position: absolute;
+    top: -9px;
+    left: 26px;
+    width: 64px;
+    height: 18px;
+    background-image: url("../assets/deco/tape.svg");
+    background-size: 100% 100%;
+    opacity: 0.85;
+    pointer-events: none;
+  }
+
+  .form-section-title {
+    display: flex;
+    gap: 0.55rem;
+    align-items: center;
+    padding-bottom: 0.7rem;
+    border-bottom: 1.5px dashed color-mix(in srgb, var(--dp-color-line) 70%, transparent);
+    font-family: var(--dp-typography-display-face);
+    font-size: 1.15rem;
+  }
+
+  .form-step-no {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    border: 1.5px solid color-mix(in srgb, var(--dp-color-accent) 45%, transparent);
+    border-radius: 58% 42% 55% 45% / 45% 55% 48% 52%;
+    font-size: 0.76rem;
+    color: var(--dp-color-accent);
+  }
+
+  .form-grid {
+    display: grid;
+    gap: 1rem 1.4rem;
+    margin-top: 1.1rem;
+  }
+
+  .form-grid.three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .form-grid.two {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+  }
+
+  .form-label {
+    font-size: 0.76rem;
+    letter-spacing: 0.06em;
+    color: var(--dp-color-annotation);
+  }
+
+  .form-input,
+  .form-select {
+    width: 100%;
+    padding: 0.4rem 0.1rem 0.45rem;
+    border: 0;
+    border-bottom: 1.5px dashed color-mix(in srgb, var(--dp-color-line) 85%, transparent);
+    background: transparent;
+    color: var(--dp-color-ink);
+    font-family: var(--dp-typography-reading-face);
+    font-size: 1rem;
+  }
+
+  .form-input:focus,
+  .form-select:focus,
+  .form-textarea:focus {
+    outline: none;
+    background-color: color-mix(in srgb, var(--dp-color-highlight) 26%, transparent);
+  }
+
+  .form-textarea {
+    width: 100%;
+    min-height: 3.2rem;
+    padding: 0.5rem 0.6rem;
+    border: 1.5px dashed color-mix(in srgb, var(--dp-color-line) 85%, transparent);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--dp-color-ink);
+    font-family: var(--dp-typography-reading-face);
+    font-size: 0.98rem;
+    line-height: 1.7;
+    resize: vertical;
+  }
+
+  .form-group-label {
+    margin: 1.2rem 0 0.3rem;
+    font-size: 0.76rem;
+    letter-spacing: 0.16em;
+    color: var(--dp-color-annotation);
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr) auto;
+    gap: 0.9rem;
+    align-items: end;
+    padding: 0.5rem 0;
+    border-bottom: 1px dashed color-mix(in srgb, var(--dp-color-line) 55%, transparent);
+  }
+
+  .form-row.step-row {
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 0.7fr) auto;
+  }
+
+  .form-remove {
+    display: grid;
+    place-items: center;
+    width: 1.6rem;
+    height: 1.6rem;
+    margin-bottom: 0.3rem;
+    border: 1.5px dashed color-mix(in srgb, var(--dp-color-line) 90%, transparent);
+    border-radius: 50%;
+    background: none;
+    color: var(--dp-color-ink-muted);
+    font-size: 0.9rem;
+    cursor: pointer;
+  }
+
+  .form-remove:hover {
+    border-color: var(--dp-color-accent);
+    color: var(--dp-color-accent);
+  }
+
+  .form-add {
+    margin-top: 0.8rem;
+    padding: 0.15rem 0.7rem 0.2rem;
+    border: 1.5px dashed color-mix(in srgb, var(--dp-color-line) 95%, transparent);
+    border-radius: var(--dp-radius-control);
+    background: none;
+    color: var(--dp-color-annotation);
+    font-family: var(--dp-typography-reading-face);
+    font-size: 0.84rem;
+    cursor: pointer;
+  }
+
+  .form-add:hover {
+    border-color: var(--dp-color-annotation);
+    color: var(--dp-color-ink);
+  }
+
+  .btn-primary {
+    border-color: var(--dp-color-ink);
+    background-color: var(--dp-color-ink);
+    color: var(--dp-color-ground);
+  }
+
+  .btn-primary:hover {
+    background-color: color-mix(in srgb, var(--dp-color-ink) 88%, white);
+  }
+
+  @media (max-width: 899px) {
+    .form-grid.three,
+    .form-grid.two {
+      grid-template-columns: 1fr;
+    }
+
+    .form-section {
+      padding: 1.1rem 1rem 1.3rem;
+    }
+  }
+
+  .add-head {
+    margin-bottom: 1.4rem;
+  }
+
+  .add-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: 2.6rem;
+    align-items: start;
+  }
+
+  .add-form {
+    min-width: 0;
+  }
+
+  .add-preview {
+    position: sticky;
+    top: 1.2rem;
+  }
+
+  .aside-label {
+    margin-bottom: 0.7rem;
+    font-family: var(--dp-typography-display-face);
+    font-size: 0.95rem;
+    letter-spacing: 0.08em;
+    color: var(--dp-color-annotation);
+  }
+
+  .preview-card {
+    padding: 12px;
+    background-color: var(--dp-color-scrap);
+    border: var(--dp-border-fine-stroke) solid color-mix(in srgb, var(--dp-color-line) 80%, transparent);
+    box-shadow: 3px 3px 0 rgba(56, 53, 47, 0.1);
+    transform: rotate(-0.4deg);
+  }
+
+  .preview-photo {
+    display: grid;
+    place-items: center;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background-color: #efe9dc;
+    color: var(--dp-color-line);
+    font-size: 0.85rem;
+  }
+
+  .preview-photo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .preview-body {
+    padding: 0.9rem 0.3rem 0.3rem;
+  }
+
+  .preview-title {
+    font-family: var(--dp-typography-display-face);
+    font-size: 1.35rem;
+  }
+
+  .preview-meta {
+    margin-top: 0.2rem;
+    font-size: 0.78rem;
+    color: var(--dp-color-annotation);
+  }
+
+  .preview-facts {
+    margin-top: 0.8rem;
+    font-size: 0.82rem;
+  }
+
+  .preview-facts p {
+    display: flex;
+    justify-content: space-between;
+    gap: 0.6rem;
+    padding: 0.26rem 0;
+    border-bottom: 1px dashed color-mix(in srgb, var(--dp-color-line) 60%, transparent);
+  }
+
+  .preview-steps {
+    margin-top: 0.8rem;
+  }
+
+  .preview-step {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    margin-top: 0.55rem;
+    padding: 0.45rem 0.55rem;
+    background-color: var(--dp-color-ground);
+    border: 1px solid color-mix(in srgb, var(--dp-color-line) 65%, transparent);
+    font-family: var(--dp-typography-display-face);
+    font-size: 0.92rem;
+  }
+
+  .preview-step span:first-child {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 1.3rem;
+    height: 1.3rem;
+    border: 1px solid color-mix(in srgb, var(--dp-color-accent) 55%, transparent);
+    border-radius: 58% 42% 55% 45% / 45% 55% 48% 52%;
+    font-size: 0.68rem;
+    color: var(--dp-color-accent);
+  }
+
+  .preview-step em {
+    margin-left: auto;
+    font-family: var(--dp-typography-reading-face);
+    font-size: 0.72rem;
+    font-style: normal;
+    color: var(--dp-color-annotation);
+  }
+
+  .form-photo-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 160px;
+    gap: 1.4rem;
+    align-items: start;
+    margin-top: 1.2rem;
+  }
+
+  .form-photo-preview {
+    margin: 0;
+    border: 1.5px solid color-mix(in srgb, var(--dp-color-line) 80%, transparent);
+    background-color: var(--dp-color-scrap);
+    padding: 5px;
+  }
+
+  .form-photo-preview img {
+    display: block;
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+  }
+
+  .form-actions {
+    margin-top: 2rem;
+  }
+
+  .copy-status {
+    min-height: 1.4rem;
+    margin-top: 0.6rem;
+    font-size: 0.78rem;
+    color: var(--dp-color-accent);
+  }
+
+  @media (max-width: 899px) {
+    .add-split {
+      grid-template-columns: 1fr;
+    }
+
+    .add-preview {
+      position: static;
+    }
+
+    .form-photo-row {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>
+
+<script>
+  type RowKind = 'main' | 'seasoning';
+
+  const form = document.querySelector<HTMLFormElement>('#recipe-form');
+  const rows = {
+    main: document.querySelector<HTMLElement>('[data-rows="main"]'),
+    seasoning: document.querySelector<HTMLElement>('[data-rows="seasoning"]'),
+    steps: document.querySelector<HTMLElement>('[data-rows="steps"]'),
+  };
+  const status = document.querySelector<HTMLElement>('[data-status]');
+  const photoInput = document.querySelector<HTMLInputElement>('input[name="photo"]');
+  const photoPreviewBox = document.querySelector<HTMLElement>('.form-photo-preview');
+  const photoPreview = document.querySelector<HTMLImageElement>('[data-photo-preview]');
+
+  let photoFile: File | null = null;
+  let photoUrl = '';
+
+  function say(message: string) {
+    if (status) status.textContent = message;
+    window.setTimeout(() => {
+      if (status?.textContent === message) status.textContent = '';
+    }, 2600);
+  }
+
+  function rowTemplate(kind: RowKind | 'steps'): string {
+    if (kind === 'steps') {
+      return `
+        <div class="form-row step-row">
+          <label class="form-field"><span class="form-label">步骤名</span><input class="form-input" type="text" data-step-name placeholder="备菜" /></label>
+          <label class="form-field"><span class="form-label">用时</span><input class="form-input" type="text" data-step-time placeholder="10min" /></label>
+          <button type="button" class="form-remove" data-remove aria-label="删除">×</button>
+          <label class="form-field" style="grid-column: 1 / -1">
+            <span class="form-label">这一步做什么（一行一条）</span>
+            <textarea class="form-textarea" data-step-items placeholder="大蒜切末&#10;洋葱切丁"></textarea>
+          </label>
+        </div>`;
+    }
+    return `
+      <div class="form-row">
+        <label class="form-field"><span class="form-label">名称</span><input class="form-input" type="text" data-ing-name placeholder="绿豆芽" /></label>
+        <label class="form-field"><span class="form-label">用量</span><input class="form-input" type="text" data-ing-amount placeholder="500g" /></label>
+        <button type="button" class="form-remove" data-remove aria-label="删除">×</button>
+      </div>`;
+  }
+
+  function addRow(kind: RowKind | 'steps') {
+    const host = rows[kind];
+    if (!host) return;
+    host.insertAdjacentHTML('beforeend', rowTemplate(kind));
+    updatePreview();
+  }
+
+  function readRows(kind: RowKind): Array<{ name: string; amount: string }> {
+    const host = rows[kind];
+    if (!host) return [];
+    return [...host.querySelectorAll('.form-row')]
+      .map((row) => ({
+        name: row.querySelector<HTMLInputElement>('[data-ing-name]')?.value.trim() ?? '',
+        amount: row.querySelector<HTMLInputElement>('[data-ing-amount]')?.value.trim() ?? '',
+      }))
+      .filter((item) => item.name);
+  }
+
+  function readSteps() {
+    const host = rows.steps;
+    if (!host) return [];
+    return [...host.querySelectorAll('.step-row')]
+      .map((row) => ({
+        name: row.querySelector<HTMLInputElement>('[data-step-name]')?.value.trim() ?? '',
+        time: row.querySelector<HTMLInputElement>('[data-step-time]')?.value.trim() ?? '',
+        items: (row.querySelector<HTMLTextAreaElement>('[data-step-items]')?.value ?? '')
+          .split('\n')
+          .map((line) => line.trim())
+          .filter(Boolean),
+      }))
+      .filter((step) => step.name || step.items.length);
+  }
+
+  function readForm() {
+    const data = new FormData(form!);
+    return {
+      title: String(data.get('title') ?? '').trim(),
+      category: String(data.get('category') ?? '蔬菜'),
+      tags: String(data.get('tags') ?? '')
+        .split(/[,，]/)
+        .map((tag) => tag.trim())
+        .filter(Boolean),
+      tips: String(data.get('tips') ?? '')
+        .split('\n')
+        .map((line) => line.trim())
+        .filter(Boolean),
+      main: readRows('main'),
+      seasoning: readRows('seasoning'),
+      steps: readSteps(),
+    };
+  }
+
+  function ingredientTable(list: Array<{ name: string; amount: string }>, heading: string): string {
+    const rows = list.map((item) => `| ${item.name} | ${item.amount} |`).join('\n');
+    return `### ${heading}\n\n| ${heading} | 数量 |\n| --- | --- |\n${rows}`;
+  }
+
+  function toMarkdown(recipe: ReturnType<typeof readForm>): string {
+    const imageName = `${recipe.title || '新菜谱'}.webp`;
+    const lines = ['---', `cover: "[[${imageName}]]"`, `category: "${recipe.category}"`];
+
+    if (recipe.tags.length) {
+      lines.push('tags:');
+      for (const tag of recipe.tags) lines.push(`  - "${tag}"`);
+    }
+    lines.push('---', '', '## 食材', '');
+
+    if (recipe.main.length) lines.push(ingredientTable(recipe.main, '主食材'), '');
+    if (recipe.seasoning.length) lines.push(ingredientTable(recipe.seasoning, '调味'), '');
+
+    lines.push('## 制作', '');
+    for (const step of recipe.steps) {
+      lines.push(`### ${step.name || '步骤'}`, '');
+      if (step.time) lines.push(`> 用时：${step.time}`, '');
+      for (const item of step.items) lines.push(`- ${item}`);
+      lines.push('');
+    }
+
+    if (recipe.tips.length) {
+      lines.push('## TIPS', '');
+      for (const tip of recipe.tips) lines.push(`- ${tip}`);
+      lines.push('');
+    }
+
+    return lines.join('\n').replace(/\n{3,}/g, '\n\n');
+  }
+
+  function download(name: string, blob: Blob) {
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = name;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(link.href), 4000);
+  }
+
+  function safeName(title: string) {
+    return (title || '新菜谱').replace(/[\\/:*?"<>|]/g, '-').trim();
+  }
+
+  async function compressPhoto(file: File, maxSize = 1600, quality = 0.82): Promise<Blob> {
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxSize / Math.max(bitmap.width, bitmap.height));
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(bitmap.width * scale);
+    canvas.height = Math.round(bitmap.height * scale);
+    canvas.getContext('2d')?.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob ?? file), 'image/webp', quality);
+    });
+  }
+
+  function updatePreview() {
+    const recipe = readForm();
+    const titleEl = document.querySelector('[data-preview-title]');
+    const metaEl = document.querySelector('[data-preview-meta]');
+    const factsEl = document.querySelector('[data-preview-facts]');
+    const stepsEl = document.querySelector('[data-preview-steps]');
+
+    if (titleEl) titleEl.textContent = recipe.title || '菜名';
+    if (metaEl) metaEl.textContent = `${recipe.category} · ${recipe.steps.length} 步`;
+
+    if (factsEl) {
+      const items = [...recipe.main, ...recipe.seasoning].slice(0, 6);
+      factsEl.innerHTML = items
+        .map((item) => {
+          const name = document.createElement('span');
+          name.textContent = item.name;
+          const amount = document.createElement('span');
+          amount.textContent = item.amount;
+          return `<p>${name.outerHTML}${amount.outerHTML}</p>`;
+        })
+        .join('');
+    }
+
+    if (stepsEl) {
+      stepsEl.innerHTML = recipe.steps
+        .slice(0, 5)
+        .map(
+          (step, index) =>
+            `<div class="preview-step"><span>${index + 1}</span><span>${(step.name || '步骤').replace(/</g, '&lt;')}</span><em>${step.time}</em></div>`,
+        )
+        .join('');
+    }
+  }
+
+  addRow('main');
+  addRow('main');
+  addRow('seasoning');
+  addRow('steps');
+
+  document.addEventListener('click', (event) => {
+    const target = event.target as HTMLElement;
+    const addButton = target.closest<HTMLElement>('[data-add-row]');
+    if (addButton) {
+      addRow(addButton.dataset.addRow as RowKind | 'steps');
+      return;
+    }
+    const removeButton = target.closest<HTMLElement>('[data-remove]');
+    if (removeButton) {
+      removeButton.closest('.form-row')?.remove();
+      updatePreview();
+    }
+  });
+
+  form?.addEventListener('input', updatePreview);
+
+  photoInput?.addEventListener('change', async () => {
+    const file = photoInput.files?.[0];
+    if (!file) return;
+
+    photoFile = file;
+    if (photoUrl) URL.revokeObjectURL(photoUrl);
+    photoUrl = URL.createObjectURL(file);
+
+    if (photoPreview && photoPreviewBox) {
+      photoPreview.src = photoUrl;
+      photoPreviewBox.hidden = false;
+    }
+    const box = document.querySelector('[data-preview-photo]');
+    if (box) {
+      box.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = photoUrl;
+      img.alt = '';
+      box.append(img);
+    }
+  });
+
+  document.addEventListener('click', async (event) => {
+    const button = (event.target as HTMLElement).closest<HTMLElement>('[data-action]');
+    if (!button) return;
+
+    const action = button.dataset.action;
+    const recipe = readForm();
+
+    if (action === 'reset') {
+      if (!window.confirm('清空已填的内容？')) return;
+      window.location.reload();
+      return;
+    }
+
+    if (!recipe.title) {
+      say('先填菜名');
+      return;
+    }
+
+    if (action === 'copy' || action === 'download-md') {
+      const markdown = toMarkdown(recipe);
+      if (action === 'copy') {
+        await navigator.clipboard.writeText(markdown).catch(() => {});
+        say('已复制 Markdown');
+        return;
+      }
+      download(`${safeName(recipe.title)}.md`, new Blob([markdown], { type: 'text/markdown' }));
+      say('已下载 Markdown');
+      return;
+    }
+
+    if (action === 'download-image') {
+      if (!photoFile) {
+        say('先选择封面照片');
+        return;
+      }
+      const blob = await compressPhoto(photoFile);
+      download(`${safeName(recipe.title)}.webp`, blob);
+      say('已下载压缩图');
+    }
+  });
+
+  updatePreview();
+</script>

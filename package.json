@@ -15,20 +15,25 @@
     "check": "astro check",
     "sync": "node scripts/sync-content.mjs",
     "astro": "astro",
-    "fonts": "node scripts/build-fonts.mjs"
+    "fonts": "node scripts/build-fonts.mjs",
+    "prebuild": "node scripts/check-fonts.mjs",
+    "normalize": "node scripts/normalize-vault.mjs",
+    "check:fonts": "node scripts/check-fonts.mjs",
+    "check:sync": "node scripts/check-sync.mjs",
+    "verify": "npm run check && npm run check:fonts && npm run check:sync -- --strict"
   },
   "dependencies": {
-    "@astrojs/sitemap": "^3.7.4",
-    "astro": "^7.4.4"
+    "@astrojs/sitemap": "3.7.4",
+    "astro": "7.4.4"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.12",
-    "@tailwindcss/vite": "^4.3.3",
-    "github-slugger": "^2.0.0",
-    "sharp": "^0.35.5",
-    "subset-font": "^2.9.0",
-    "tailwindcss": "^4.3.3",
-    "typescript": "^6.0.3",
-    "yaml": "^2.9.1"
+    "@astrojs/check": "0.9.12",
+    "@tailwindcss/vite": "4.3.3",
+    "github-slugger": "2.0.0",
+    "sharp": "0.35.5",
+    "subset-font": "2.9.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "6.0.3",
+    "yaml": "2.9.1"
   }
 }

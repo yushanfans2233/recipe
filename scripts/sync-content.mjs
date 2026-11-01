@@ -9,21 +9,26 @@
  * 产物（需要提交到仓库，CI 构建时不再依赖 Obsidian）：
  *   src/content/recipes/<slug>.md   规范化后的 Markdown
  *   src/assets/recipes/<slug>.webp  压缩后的封面图
+ *   recipes-src/<分类>/<菜名>.md     原文镜像（版本历史用）
+ *   .cache/sync-state.json          源目录指纹（判断线上内容是否过期）
+ *
+ * 校验不通过会直接失败，不会静默降级。
  *
  * 用法：npm run sync
  */
 import { existsSync } from 'node:fs';
 import { mkdir, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { createHash } from 'node:crypto';
 import GithubSlugger from 'github-slugger';
 import sharp from 'sharp';
 import YAML from 'yaml';
-
-const VAULT_DIR = process.env.RECIPE_VAULT || 'C:/Users/32347/OneDrive/文档/obsidian/菜单/菜谱库';
-const IMAGE_DIR = process.env.RECIPE_IMAGES || 'C:/Users/32347/OneDrive/文档/obsidian/菜单/图片';
+import { buildFonts } from './build-fonts.mjs';
+import { VAULT_DIR, IMAGE_DIR, STATE_FILE, fingerprint } from './lib/vault-state.mjs';
 
 const CONTENT_DIR = 'src/content/recipes';
 const ASSET_DIR = 'src/assets/recipes';
+const SOURCE_MIRROR_DIR = 'recipes-src';
 
 /** 首页分类的展示顺序 */
 const CATEGORY_ORDER = ['蛋白质', '蔬菜', '主食'];
@@ -35,6 +40,9 @@ const IGNORED_DIRS = new Set(['模板', '.obsidian', '图片']);
 const MAX_WIDTH = 1600;
 const WEBP_QUALITY = 82;
 const IMAGE_EXT = /\.(?:png|jpe?g|webp|gif|svg|avif|bmp|tiff?)$/i;
+
+const errors = [];
+const warnings = [];
 
 function fail(message) {
 	console.error(`\n✖ ${message}\n`);
@@ -80,23 +88,49 @@ function normalizeTags(raw) {
 	return [...new Set(tags.map((tag) => String(tag).trim()).filter((tag) => tag && tag !== 'receipt'))];
 }
 
+/** category 可以是字符串，也可以是数组（第一个当主分类） */
+function normalizeCategories(raw, fallback) {
+	const list = Array.isArray(raw) ? raw : typeof raw === 'string' ? [raw] : [];
+	const clean = [...new Set(list.map((item) => String(item).trim()).filter(Boolean))];
+	if (clean.length) return clean;
+	return fallback ? [fallback] : [];
+}
+
+/** 从「步骤 / 时间」表里累加总时长（分钟） */
+function totalMinutes(body) {
+	let total = 0;
+	let found = false;
+
+	for (const line of body.split(/\r?\n/)) {
+		if (!line.trim().startsWith('|')) continue;
+		const cells = line.split('|').map((cell) => cell.trim());
+		if (cells.length < 3) continue;
+		const value = cells[cells.length - 2];
+		const match = value.match(/^(\d+(?:\.\d+)?)\s*(min|分钟|小时|h|hour)/i);
+		if (!match) continue;
+		const amount = Number(match[1]);
+		const unit = match[2].toLowerCase();
+		total += unit === '小时' || unit === 'h' || unit === 'hour' ? amount * 60 : amount;
+		found = true;
+	}
+
+	return found ? Math.round(total) : undefined;
+}
+
 /**
- * 把 Obsidian Markdown 转成普通 Markdown：
- * - 删除 %% 注释 %%
- * - 删除 ![[图片]] / [[图片]] 嵌入（封面单独渲染）
- * - 标题层级重排（源文件里 # / ## / ### 混用，统一成从 h2 开始）
- * - [[#标题]] → [标题](#slug)，断链降级成纯文本
+ * 把 Obsidian Markdown 转成普通 Markdown（保留对历史写法的兼容）。
+ * - 删除 %% 注释 %% 与图片嵌入
+ * - 标题层级统一从 h2 开始
+ * - [[#标题]] → 页内锚点，断链降级为纯文本
  */
 function transformBody(rawBody) {
 	let body = rawBody.replace(/%%[\s\S]*?%%/g, '');
 
-	// 图片嵌入与图片双链：封面单独渲染，正文里去掉
 	body = body.replace(
 		/!?\[\[[^\]\n]*?\.(?:png|jpe?g|webp|gif|svg|avif|bmp|tiff?)(?:\|[^\]\n]*)?\]\]/gi,
 		'',
 	);
 
-	// 先按文档顺序给所有标题生成锚点，保证和渲染器一致
 	const headingPattern = /^(#{1,6})[ \t]+(.+?)[ \t]*#*[ \t]*$/gm;
 	const headings = [...body.matchAll(headingPattern)].map((match) => ({
 		level: match[1].length,
@@ -104,7 +138,6 @@ function transformBody(rawBody) {
 	}));
 
 	const levels = [...new Set(headings.map((heading) => heading.level))].sort((a, b) => a - b);
-	// 最浅的一级标题映射到 h2（页面标题已占用 h1）
 	const levelMap = new Map(levels.map((level, index) => [level, Math.min(2 + index, 6)]));
 
 	const slugger = new GithubSlugger();
@@ -120,13 +153,10 @@ function transformBody(rawBody) {
 		const [targetRaw, aliasRaw] = inner.split('|');
 		const target = targetRaw.trim();
 		const heading = target.replace(/^#/, '').trim();
-		// 链接文字默认用标题本身，不要带 # 前缀
 		const label = (aliasRaw ?? heading).trim();
 		const anchor = anchors.get(heading);
 
-		// 指向文档内的标题（或指向本文件中存在的标题）
 		if (anchor) return `[${label}](#${anchor})`;
-		// 指向没有收录的笔记（如 [[面粉小知识]]），只保留文字
 		return label;
 	});
 
@@ -159,57 +189,66 @@ function resolveCoverFile(data, title, imageIndex) {
 async function collectRecipes(imageIndex) {
 	const entries = [];
 	const skipped = [];
-
-	const categoryNames = (await readdir(VAULT_DIR, { withFileTypes: true }))
+	const categories = (await readdir(VAULT_DIR, { withFileTypes: true }))
 		.filter((entry) => entry.isDirectory() && !IGNORED_DIRS.has(entry.name))
 		.map((entry) => entry.name);
 
-	for (const category of categoryNames) {
-		const fileNames = (await readdir(path.join(VAULT_DIR, category), { withFileTypes: true }))
+	for (const folder of categories) {
+		const files = (await readdir(path.join(VAULT_DIR, folder), { withFileTypes: true }))
 			.filter((file) => file.isFile() && file.name.toLowerCase().endsWith('.md'))
 			.map((file) => file.name);
 
-		for (const fileName of fileNames) {
+		for (const fileName of files) {
 			const title = fileName.replace(/\.md$/i, '').trim();
-			const raw = await readFile(path.join(VAULT_DIR, category, fileName), 'utf8');
+			const raw = await readFile(path.join(VAULT_DIR, folder, fileName), 'utf8');
 
 			if (!raw.trim()) {
-				skipped.push({ title, category, reason: '空文件' });
+				skipped.push(`${folder}/${title}（空文件）`);
 				continue;
 			}
 
 			const { data, body } = splitFrontmatter(raw);
 			const content = transformBody(body);
 
-			if (!content.trim()) {
-				skipped.push({ title, category, reason: '正文为空' });
-				continue;
+			// ---- 结构校验：有问题立刻报错，不静默降级 ----
+			if (!/^## 食材[ \t]*$/m.test(content)) errors.push(`${folder}/${title}：缺少「## 食材」段落`);
+			if (!/^## 制作[ \t]*$/m.test(content)) {
+				// 没有制作段：不阻断同步，但必须在日志里报出来（页面会回退成单栏）
+				warnings.push(`${folder}/${title}：没有「## 制作」段落，页面上会退化成单栏`);
+			} else {
+				const processBlock = content.split(/^## 制作\s*$/m)[1]?.split(/^## /m)[0] ?? '';
+				if (!/^### /m.test(processBlock)) errors.push(`${folder}/${title}：「## 制作」下面没有 ### 步骤`);
 			}
+			if (!content.trim()) errors.push(`${folder}/${title}：正文为空`);
 
+			const categoriesForRecipe = normalizeCategories(data.category, folder);
 			entries.push({
 				title,
-				category,
+				folder,
+				primaryCategory: categoriesForRecipe[0] ?? folder,
+				categories: categoriesForRecipe,
 				order: 0,
 				tags: normalizeTags(data.tags),
 				slug: sanitizeSlug(title),
 				coverFile: resolveCoverFile(data, title, imageIndex),
+				minutes: totalMinutes(content),
 				body: content,
+				raw,
 			});
 		}
 	}
 
-	// 稳定排序：分类顺序 → 菜名（中文按拼音）
 	entries.sort((a, b) => {
-		const ai = CATEGORY_ORDER.indexOf(a.category);
-		const bi = CATEGORY_ORDER.indexOf(b.category);
+		const ai = CATEGORY_ORDER.indexOf(a.primaryCategory);
+		const bi = CATEGORY_ORDER.indexOf(b.primaryCategory);
 		if (ai !== bi) return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
 		return a.title.localeCompare(b.title, 'zh-Hans-CN');
 	});
 
 	const counter = new Map();
 	for (const entry of entries) {
-		const next = (counter.get(entry.category) ?? 0) + 1;
-		counter.set(entry.category, next);
+		const next = (counter.get(entry.primaryCategory) ?? 0) + 1;
+		counter.set(entry.primaryCategory, next);
 		entry.order = next;
 	}
 
@@ -220,9 +259,11 @@ function renderMarkdownFile(entry, coverPath) {
 	const lines = [
 		'---',
 		`title: ${JSON.stringify(entry.title)}`,
-		`category: ${JSON.stringify(entry.category)}`,
+		`category: ${JSON.stringify(entry.primaryCategory)}`,
+		`categories: ${JSON.stringify(entry.categories)}`,
 		`order: ${entry.order}`,
 	];
+	if (entry.minutes) lines.push(`time: ${entry.minutes}`);
 	if (entry.tags.length) {
 		lines.push('tags:');
 		for (const tag of entry.tags) lines.push(`  - ${JSON.stringify(tag)}`);
@@ -249,61 +290,94 @@ async function writeCover(entry) {
 	return { originalBytes: before.size, webpBytes: after.size };
 }
 
+/** 网页新增的菜谱（source: web）在同步时保留 */
+async function collectWebEntries() {
+	if (!existsSync(CONTENT_DIR)) return [];
+	const files = (await readdir(CONTENT_DIR)).filter((file) => file.endsWith('.md'));
+	const kept = [];
+
+	for (const file of files) {
+		const raw = await readFile(path.join(CONTENT_DIR, file), 'utf8');
+		if (/^source:\s*["']?web["']?$/m.test(raw)) kept.push({ file, raw });
+	}
+	return kept;
+}
+
 async function main() {
-	if (!existsSync(VAULT_DIR)) {
-		fail(`找不到菜谱目录：${VAULT_DIR}\n  可以用 RECIPE_VAULT 环境变量指定其他路径。`);
-	}
-	if (!existsSync(IMAGE_DIR)) {
-		fail(`找不到图片目录：${IMAGE_DIR}\n  可以用 RECIPE_IMAGES 环境变量指定其他路径。`);
-	}
+	if (!existsSync(VAULT_DIR)) fail(`找不到菜谱目录：${VAULT_DIR}\n  可以用 RECIPE_VAULT 环境变量指定其他路径。`);
+	if (!existsSync(IMAGE_DIR)) fail(`找不到图片目录：${IMAGE_DIR}\n  可以用 RECIPE_IMAGES 环境变量指定其他路径。`);
 
 	const imageIndex = await buildImageIndex();
 	const { entries, skipped } = await collectRecipes(imageIndex);
 
-	// 防止同名菜谱生成同一个页面
 	const seen = new Map();
 	for (const entry of entries) {
-		if (seen.has(entry.slug)) fail(`菜名重复：${entry.title}（${seen.get(entry.slug)} 与 ${entry.category}），请先改名。`);
-		seen.set(entry.slug, entry.category);
+		if (seen.has(entry.slug)) errors.push(`菜名重复：${entry.title}（${seen.get(entry.slug)} 与 ${entry.folder}）`);
+		seen.set(entry.slug, entry.folder);
+		if (!entry.coverFile) warnings.push(`${entry.folder}/${entry.title}：没有封面图`);
 	}
 
+	if (errors.length) {
+		console.error('\n✖ 内容校验没通过：');
+		for (const message of errors) console.error(`  · ${message}`);
+		console.error('\n先修好这些再同步（写法见 README 的「菜谱写法」）。\n');
+		process.exit(1);
+	}
+
+	const webEntries = await collectWebEntries();
 	await rm(CONTENT_DIR, { recursive: true, force: true });
 	await rm(ASSET_DIR, { recursive: true, force: true });
+	await rm(SOURCE_MIRROR_DIR, { recursive: true, force: true });
 	await mkdir(CONTENT_DIR, { recursive: true });
 	await mkdir(ASSET_DIR, { recursive: true });
 
 	let originalBytes = 0;
 	let webpBytes = 0;
-	const missingCovers = [];
 
 	for (const entry of entries) {
 		const sizes = await writeCover(entry);
 		originalBytes += sizes.originalBytes;
 		webpBytes += sizes.webpBytes;
-		if (!entry.coverFile) missingCovers.push(`${entry.category}/${entry.title}`);
 
 		const coverPath = entry.coverFile ? `${entry.slug}.webp` : null;
 		await writeFile(path.join(CONTENT_DIR, `${entry.slug}.md`), renderMarkdownFile(entry, coverPath), 'utf8');
 
-		console.log(`  ${entry.category}  ${entry.title}  →  ${entry.slug}.md${coverPath ? '' : '  （无封面）'}`);
+		// 原文镜像：只镜像 md（几 KB），图片仍留在 Obsidian 里
+		const mirrorDir = path.join(SOURCE_MIRROR_DIR, entry.folder);
+		await mkdir(mirrorDir, { recursive: true });
+		await writeFile(path.join(mirrorDir, `${entry.title}.md`), entry.raw, 'utf8');
 	}
 
+	for (const kept of webEntries) {
+		await writeFile(path.join(CONTENT_DIR, kept.file), kept.raw, 'utf8');
+	}
+
+	const fontsChanged = await buildFonts({ quiet: true });
+	const state = await fingerprint([VAULT_DIR, IMAGE_DIR]);
+	await mkdir(path.dirname(STATE_FILE), { recursive: true });
+	await writeFile(
+		STATE_FILE,
+		JSON.stringify({ ...state, syncedAt: new Date().toISOString(), recipes: entries.length }, null, 2),
+		'utf8',
+	);
+
 	const byCategory = CATEGORY_ORDER.map(
-		(category) => `${category} ${entries.filter((entry) => entry.category === category).length}`,
+		(category) => `${category} ${entries.filter((entry) => entry.primaryCategory === category).length}`,
 	).join(' · ');
 
 	console.log('\n────────────────────────────');
 	console.log(`菜谱 ${entries.length} 道：${byCategory}`);
-	if (missingCovers.length) console.log(`无封面 ${missingCovers.length} 道：${missingCovers.join('、')}`);
-	if (skipped.length) {
-		console.log(
-			`跳过 ${skipped.length} 个文件：${skipped.map((item) => `${item.category}/${item.title}（${item.reason}）`).join('、')}`,
-		);
+	if (webEntries.length) console.log(`保留网页新增 ${webEntries.length} 篇`);
+	if (skipped.length) console.log(`跳过：${skipped.join('、')}`);
+	if (warnings.length) {
+		console.log(`提醒 ${warnings.length} 条：`);
+		for (const message of warnings) console.log(`  · ${message}`);
 	}
 	if (originalBytes) {
 		const mb = (bytes) => `${(bytes / 1024 / 1024).toFixed(1)}MB`;
-		console.log(`封面图 ${mb(originalBytes)} → ${mb(webpBytes)}（WebP 最长边 ${MAX_WIDTH}px）`);
+		console.log(`封面图 ${mb(originalBytes)} → ${mb(webpBytes)}`);
 	}
+	console.log(fontsChanged ? '字体子集已重建' : '字体子集无需更新');
 	console.log('────────────────────────────\n');
 }
 

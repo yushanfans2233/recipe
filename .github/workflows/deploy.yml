@@ -19,7 +19,30 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # 先校验：类型、内容结构、字体子集。不过就不部署。
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Type check
+        run: npm run check
+
+      - name: Font subset check
+        run: npm run check:fonts
+
   build:
+    needs: verify
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
